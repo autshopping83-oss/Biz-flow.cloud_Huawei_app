@@ -1,0 +1,53 @@
+name: Build Biz-Flow AAB
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Instalar e Build Web
+        run: |
+          npm install
+          npm run build
+
+      - name: Capacitor Sync
+        run: npx cap sync android
+
+      - name: Assinar e Gerar AAB
+        env:
+          K_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          K_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          # 1. Descodificar a chave
+          echo "$K_BASE64" | base64 --decode > bizflow.keystore
+          
+          # 2. Validar o tamanho (Deve ser > 1000 bytes)
+          SIZE=$(stat -c%s "bizflow.keystore")
+          echo "Tamanho da chave: $SIZE bytes"
+          
+          # 3. Build Final
+          cd android
+          chmod +x gradlew
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file="$(pwd)/../bizflow.keystore" \
+            -Pandroid.injected.signing.store.password="$K_PASS" \
+            -Pandroid.injected.signing.key.alias="bizflow_alias" \
+            -Pandroid.injected.signing.key.password="$K_PASS"
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: BizFlow-Release-Final
+          path: android/app/build/outputs/bundle/release/app-release.aab

@@ -1,0 +1,59 @@
+
+{
+  "name": "Biz-flow.cloud",
+  "short_name": "Biz-flow",
+  "id": "/",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563EB",
+  "description": "Faturas, Recibos e Orçamentos em PDF. Gestão simples e profissional.",
+  "orientation": "portrait",
+  "scope": "/",
+  "categories": [
+    "finance",
+    "productivity",
+    "business"
+  ],
+  "icons": [
+    {
+      "src": "/android-launchericon-192-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-launchericon-192-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/android-launchericon-512-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-launchericon-512-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://placehold.co/1280x720/f8fafc/1e293b.png?text=Painel+BizFlow",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Painel Principal"
+    },
+    {
+      "src": "https://placehold.co/720x1280/2563eb/ffffff.png?text=Faturas+Mobile",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "label": "Faturas Mobile"
+    }
+  ]
+}
