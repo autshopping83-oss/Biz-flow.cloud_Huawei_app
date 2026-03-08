@@ -42,7 +42,7 @@ jobs:
       - name: Build Android Release
         run: |
           cd android
-          ./gradlew assembleRelease
+          ./gradlew bundleRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
 
