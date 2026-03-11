@@ -15,6 +15,10 @@ const config: CapacitorConfig = {
         noDeviceFound: "Nenhuma impressora encontrada"
       }
     }
+  },
+  android: {
+    icon: 'logo.png',
+    splash: 'splash.png'
   }
 };
 
