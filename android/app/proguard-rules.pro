@@ -19,3 +19,20 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Keep attributes for GSON
+-keepattributes Signature
+
+# GSON specific rules
+-keep class com.google.gson.Gson { *; }
+-keep class com.google.gson.** { *; }
+
+# Keep your model classes
+-keep public class com.bizflow.app.models.** { *; }
+
+# Retrofit and OkHttp rules
+-dontwarn retrofit2.**
+-dontwarn okhttp3.**
+-keepclassmembers,allowshrinking,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}

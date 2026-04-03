@@ -145,10 +145,15 @@ const App: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const action = params.get('action');
+    const view = params.get('view');
 
     if (action === 'delete_account') {
         setCurrentView('deleteAccount');
         return; 
+    }
+
+    if (view === 'updatePassword') {
+        setCurrentView('updatePassword');
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -156,19 +161,23 @@ const App: React.FC = () => {
       if (session) {
         initializeUserData(session.user.id);
       } else {
-        if (currentView === 'loading') setCurrentView('login');
+        if (currentView === 'loading' && view !== 'updatePassword') setCurrentView('login');
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) {
-        initializeUserData(session.user.id);
-      } else if (!isGuest && action !== 'delete_account') {
-        if (currentView !== 'register' && currentView !== 'forgotPassword') {
-            setCurrentView('login');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        setSession(session);
+        if (event === 'PASSWORD_RECOVERY') {
+            setCurrentView('updatePassword');
+            return;
         }
-      }
+        if (session) {
+            initializeUserData(session.user.id);
+        } else if (!isGuest && action !== 'delete_account') {
+            if (currentView !== 'register' && currentView !== 'forgotPassword' && currentView !== 'updatePassword') {
+                setCurrentView('login');
+            }
+        }
     });
 
     getDirectoryHandle().then(handle => { if (handle) setLocalDirHandle(handle); });
@@ -593,7 +602,7 @@ const App: React.FC = () => {
 
       {currentView === 'loading' && <PageLoader />}
 
-      {['login', 'register', 'forgotPassword'].includes(currentView) && (
+      {['login', 'register', 'forgotPassword', 'updatePassword'].includes(currentView) && (
         <AuthScreens 
           view={currentView} 
           setView={setCurrentView} 

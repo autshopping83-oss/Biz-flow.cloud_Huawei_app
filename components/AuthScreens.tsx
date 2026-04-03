@@ -3,13 +3,14 @@ import React, { useState } from 'react';
 import { CURRENCIES, LANGUAGES } from '../services/translationService';
 import { Logo } from './Logo';
 import { useToast } from './ToastContext';
+import { supabase } from '../services/supabaseClient'; // Import supabase client
 
 interface AuthProps {
   onLogin: (email: string, pass: string) => void;
   onRegister: (email: string, pass: string, data: any) => void;
   onGoogleLogin: () => void;
-  view: 'login' | 'register' | 'forgotPassword';
-  setView: (view: 'login' | 'register' | 'forgotPassword') => void;
+  view: 'login' | 'register' | 'forgotPassword' | 'updatePassword';
+  setView: (view: 'login' | 'register' | 'forgotPassword' | 'updatePassword') => void;
   isLoading?: boolean;
   onGuestAccess: () => void;
   onInstall?: () => void;
@@ -18,7 +19,7 @@ interface AuthProps {
 
 // --- Shared Layout (Moved Outside) ---
 const AuthLayout = ({ children, title, subtitle }: any) => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 transition-colors duration-300">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 transition-colors duration-300">
     <div className="bg-white dark:bg-slate-900 p-8 md:p-10 rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-black/50 w-full max-w-md border border-slate-100 dark:border-slate-800 transition-all duration-300 animate-scaleIn">
       <div className="text-center mb-8">
         <div className="flex justify-center mb-4">
@@ -46,7 +47,10 @@ export const AuthScreens: React.FC<AuthProps> = ({ onLogin, onRegister, onGoogle
     language: 'pt',
     logo: ''
   });
-  
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [updatePasswordData, setUpdatePasswordData] = useState({ password: '', confirmPassword: '' });
+
+
   // Use Toast Hook
   const { notify } = useToast();
 
@@ -71,11 +75,40 @@ export const AuthScreens: React.FC<AuthProps> = ({ onLogin, onRegister, onGoogle
     onLogin(loginData.email, loginData.password);
   }
   
-  const handleForgotSubmit = (e: React.FormEvent) => {
-      e.preventDefault(); 
-      notify("Funcionalidade em desenvolvimento. Link de recuperação simulado enviado.", 'info');
-      setView('login');
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotPasswordEmail) {
+        notify("Por favor, insira o seu e-mail.", 'error');
+        return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail, {
+        redirectTo: window.location.origin + '?view=updatePassword' // Redirect to update password page
+    });
+    if (error) {
+        notify("Erro ao enviar o e-mail de recuperação: " + error.message, 'error');
+    } else {
+        notify("E-mail de recuperação enviado com sucesso!", 'success');
+        setView('login');
+    }
+}
+
+  const handleUpdatePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (updatePasswordData.password !== updatePasswordData.confirmPassword) {
+        notify("As senhas não coincidem.", 'error');
+        return;
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: updatePasswordData.password });
+
+    if (error) {
+        notify("Erro ao atualizar a senha: " + error.message, 'error');
+    } else {
+        notify("Senha atualizada com sucesso!", 'success');
+        setView('login');
+    }
   }
+
 
   // --- GOOGLE BUTTON COMPONENT ---
   const GoogleButton = () => (
@@ -185,7 +218,11 @@ export const AuthScreens: React.FC<AuthProps> = ({ onLogin, onRegister, onGoogle
              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Email</label>
              <div className="relative">
                 <i className="fa-solid fa-envelope absolute left-3 top-3.5 text-slate-400"></i>
-                <input type="email" required className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white" placeholder="nome@exemplo.com" />
+                <input type="email" required className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white" 
+                placeholder="nome@exemplo.com"
+                value={forgotPasswordEmail}
+                onChange={e => setForgotPasswordEmail(e.target.value)}
+                 />
              </div>
           </div>
           <button className="w-full bg-slate-900 dark:bg-blue-600 text-white font-semibold py-3.5 rounded-xl hover:bg-slate-800 dark:hover:bg-blue-700 transition-all shadow-lg shadow-slate-900/20">
@@ -200,6 +237,47 @@ export const AuthScreens: React.FC<AuthProps> = ({ onLogin, onRegister, onGoogle
       </AuthLayout>
     );
   }
+
+  if (view === 'updatePassword') {
+    return (
+        <AuthLayout title="Atualizar Senha" subtitle="Crie uma nova senha para sua conta">
+            <form onSubmit={handleUpdatePasswordSubmit} className="space-y-5">
+                <div>
+                    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Nova Senha</label>
+                    <div className="relative">
+                        <i className="fa-solid fa-lock absolute left-3 top-3.5 text-slate-400"></i>
+                        <input
+                            type="password"
+                            required
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white transition-all placeholder:text-slate-400"
+                            placeholder="••••••••"
+                            value={updatePasswordData.password}
+                            onChange={e => setUpdatePasswordData({ ...updatePasswordData, password: e.target.value })}
+                        />
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Confirmar Nova Senha</label>
+                    <div className="relative">
+                        <i className="fa-solid fa-lock absolute left-3 top-3.5 text-slate-400"></i>
+                        <input
+                            type="password"
+                            required
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white transition-all placeholder:text-slate-400"
+                            placeholder="••••••••"
+                            value={updatePasswordData.confirmPassword}
+                            onChange={e => setUpdatePasswordData({ ...updatePasswordData, confirmPassword: e.target.value })}
+                        />
+                    </div>
+                </div>
+                <button className="w-full bg-slate-900 dark:bg-blue-600 text-white font-semibold py-3.5 rounded-xl hover:bg-slate-800 dark:hover:bg-blue-700 transition-all shadow-lg shadow-slate-900/20">
+                    Atualizar Senha
+                </button>
+            </form>
+        </AuthLayout>
+    );
+}
+
 
   // Register View
   return (
