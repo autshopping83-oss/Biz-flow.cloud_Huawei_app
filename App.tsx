@@ -107,8 +107,9 @@ const App: React.FC = () => {
     const taxRate = Number(formData.taxRate) || 0;
     const discount = Number(formData.discount) || 0;
     
-    const taxAmount = (subtotal - discount) * (taxRate / 100);
-    const total = subtotal - discount + taxAmount;
+    const baseAmount = subtotal - discount;
+    const taxAmount = baseAmount > 0 ? baseAmount * (taxRate / 100) : 0;
+    const total = Math.max(0, baseAmount + taxAmount);
 
     if (subtotal !== formData.subtotal || taxAmount !== formData.taxAmount || total !== formData.total) {
       setFormData(prev => ({ ...prev, subtotal, taxAmount, total }));
@@ -807,8 +808,69 @@ const App: React.FC = () => {
                      <h2 className="text-xl font-bold dark:text-white">Configurações</h2>
                      <button onClick={() => setShowSettingsModal(false)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition-colors"><i className="fa-solid fa-times text-slate-500"></i></button>
                  </div>
-                 <div className="p-6 space-y-6 overflow-y-auto scrollbar-thin">...</div>
-                 <div className="p-6 bg-slate-50 dark:bg-slate-900 border-t dark:border-slate-800 flex gap-4 transition-colors">
+                 <div className="p-6 space-y-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">Nome da Empresa</label>
+                            <input type="text" name="name" value={companySettings.name} onChange={handleUpdateSettings} className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm dark:text-white transition-colors"/>
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">Seu Logotipo</label>
+                            <div className="flex items-center gap-4">
+                                {companySettings.logo && <img src={companySettings.logo} alt="logo" className="w-12 h-12 rounded-lg object-cover bg-slate-100"/>}
+                                <input type="file" onChange={handleLogoChange} accept="image/*" className="text-xs dark:text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                            </div>
+                        </div>
+                      </div>
+                      <div>
+                          <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">Endereço</label>
+                          <input type="text" name="address" value={companySettings.address} onChange={handleUpdateSettings} className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm dark:text-white transition-colors"/>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">Contacto</label>
+                            <input type="text" name="contact" value={companySettings.contact} onChange={handleUpdateSettings} className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm dark:text-white transition-colors"/>
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">NUIT</label>
+                            <input type="text" name="nuit" value={companySettings.nuit} onChange={handleUpdateSettings} className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm dark:text-white transition-colors"/>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                         <div>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">IVA Padrão (%)</label>
+                            <input type="number" name="defaultTaxRate" value={companySettings.defaultTaxRate} onChange={handleUpdateSettings} className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm dark:text-white transition-colors"/>
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">Moeda</label>
+                            <select name="currency" value={companySettings.currency} onChange={handleUpdateSettings} className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm dark:text-white transition-colors">
+                                <option value="MZN">MZN</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                                <option value="ZAR">ZAR</option>
+                            </select>
+                        </div>
+                         <div>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">Idioma</label>
+                            <select name="language" value={companySettings.language} onChange={handleUpdateSettings} className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm dark:text-white transition-colors">
+                                <option value="pt">Português</option>
+                                <option value="en">English</option>
+                            </select>
+                        </div>
+                      </div>
+                      <div className="border-t border-slate-200 dark:border-slate-800 pt-6">
+                         <h4 className="text-md font-bold text-slate-800 dark:text-slate-200 mb-3">Definições de Armazenamento</h4>
+                         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                           Ative o armazenamento em uma pasta local para salvar PDFs diretamente no seu computador.
+                           Isso é recomendado para ter backups e acesso offline.
+                         </p>
+                         <button onClick={requestFolderPermission} className="bg-emerald-50 text-emerald-700 font-bold text-xs py-3 px-5 rounded-xl flex items-center gap-2 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400 dark:hover:bg-emerald-900/60 transition-colors">
+                           <i className="fa-solid fa-folder-tree"></i>
+                           {localDirHandle ? `Pasta '${localDirHandle.name}' Ativa` : 'Ativar Armazenamento Local'}
+                         </button>
+                      </div>
+                 </div>
+                 <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t dark:border-slate-800 flex gap-4 transition-colors">
                      <button onClick={() => setShowSettingsModal(false)} className="flex-1 bg-white dark:bg-slate-800 border dark:border-slate-700 dark:text-white font-bold py-4 rounded-xl text-xs uppercase tracking-widest transition-colors">Cancelar</button>
                      <button onClick={handleSaveSettings} disabled={isSavingSettings} className="flex-1 bg-blue-600 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 active:scale-95 disabled:opacity-50 transition-all">{isSavingSettings ? <i className="fa-solid fa-spinner animate-spin"></i> : 'GUARDAR ALTERAÇÕES'}</button>
                  </div>
