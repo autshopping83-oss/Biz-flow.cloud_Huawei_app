@@ -16,21 +16,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    signingConfigs {
-        release {
-            if (System.getenv("KEYSTORE_PASSWORD") != null) {
-                storeFile file('bizflow.keystore')
-                storePassword System.getenv("KEYSTORE_PASSWORD")
-                keyAlias System.getenv("KEY_ALIAS")
-                keyPassword System.getenv("KEY_PASSWORD")
-            }
-        }
-    }
+    // signingConfigs {
+    //     release {
+    //         if (System.getenv("KEYSTORE_PASSWORD") != null) {
+    //             storeFile file('bizflow.keystore')
+    //             storePassword System.getenv("KEYSTORE_PASSWORD")
+    //             keyAlias System.getenv("KEY_ALIAS")
+    //             keyPassword System.getenv("KEY_PASSWORD")
+    //         }
+    //     }
+    // }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            // signingConfig signingConfigs.release
         }
     }
 }
