@@ -29,19 +29,22 @@ jobs:
       - name: Build app
         run: npm run build
 
-      - name: Build and sign APK
+      - name: Create Keystore
+        working-directory: ./android/app
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: echo $KEYSTORE_BASE64 | base64 --decode > bizflow.keystore
+
+      - name: Build and sign AAB
+        working-directory: ./android
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: bizflow_alias
           KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          cd android
-          echo $KEYSTORE_BASE64 | base64 --decode > app/bizflow.keystore
-          ./gradlew assembleRelease
+        run: ./gradlew bundleRelease
 
-      - name: Upload APK
+      - name: Upload AAB
         uses: actions/upload-artifact@v3
         with:
-          name: bizflow
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: bizflow-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
