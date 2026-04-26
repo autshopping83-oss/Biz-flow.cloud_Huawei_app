@@ -209,8 +209,15 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const isGuestAccess = params.get('guest') === 'true';
     const action = params.get('action');
     const view = params.get('view');
+
+    if (isGuestAccess) {
+        setIsGuest(true);
+        setCurrentView('app');
+        return; // Skip other auth checks
+    }
 
     if (action === 'delete_account') {
         setCurrentView('deleteAccount');
@@ -677,7 +684,6 @@ const App: React.FC = () => {
           onRegister={handleRegister} 
           onGoogleLogin={() => supabase.auth.signInWithOAuth({provider: 'google'})} 
           isLoading={authLoading} 
-          onGuestAccess={() => { setIsGuest(true); setCurrentView('app'); }} 
           onInstall={handleInstallApp}
           showInstallButton={!!installPrompt}
         />

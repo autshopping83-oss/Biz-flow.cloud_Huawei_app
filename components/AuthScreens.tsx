@@ -12,7 +12,6 @@ interface AuthProps {
   view: 'login' | 'register' | 'forgotPassword' | 'updatePassword';
   setView: (view: 'login' | 'register' | 'forgotPassword' | 'updatePassword') => void;
   isLoading?: boolean;
-  onGuestAccess: () => void;
   onInstall?: () => void;
   showInstallButton?: boolean;
 }
@@ -36,7 +35,7 @@ const AuthLayout = ({ children, title, subtitle }: any) => (
   </div>
 );
 
-export const AuthScreens: React.FC<AuthProps> = ({ onLogin, onRegister, onGoogleLogin, view, setView, isLoading = false, onGuestAccess, onInstall, showInstallButton }) => {
+export const AuthScreens: React.FC<AuthProps> = ({ onLogin, onRegister, onGoogleLogin, view, setView, isLoading = false, onInstall, showInstallButton }) => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({
     name: '',
@@ -185,13 +184,12 @@ export const AuthScreens: React.FC<AuthProps> = ({ onLogin, onRegister, onGoogle
                 </button>
             )}
 
-            <button
-                type="button"
-                onClick={onGuestAccess}
+            <a
+                href="/?guest=true"
                 className="w-full bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 font-bold py-3 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all flex items-center justify-center gap-2"
             >
                 <i className="fa-solid fa-bolt"></i> Biz-flow (Modo Simples)
-            </button>
+            </a>
         </div>
 
         <GoogleButton />
