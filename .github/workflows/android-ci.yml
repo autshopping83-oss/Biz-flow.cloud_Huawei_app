@@ -22,7 +22,7 @@ jobs:
         env:
           ENCODED_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo $ENCODED_KEYSTORE | base64 -d > android/bizflow.keystore
+          echo $ENCODED_KEYSTORE | base64 -d > android/app/bizflow.keystore
 
       - name: Build and sign AAB
         env:
