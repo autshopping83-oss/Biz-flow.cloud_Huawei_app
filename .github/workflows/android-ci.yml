@@ -18,22 +18,15 @@ jobs:
           distribution: 'zulu'
           java-version: '11'
 
-      - name: Decode Keystore
-        env:
-          ENCODED_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          echo $ENCODED_KEYSTORE | base64 -d > android/app/bizflow.keystore
-      
-      - name: List files in android/app
-        run: ls -la android/app
-
       - name: Build and sign AAB
         env:
+          ENCODED_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           cd android
+          echo $ENCODED_KEYSTORE | base64 -d > app/bizflow.keystore
           ./gradlew bundleRelease
 
       - name: Upload AAB
