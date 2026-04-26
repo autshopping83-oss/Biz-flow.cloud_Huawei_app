@@ -23,6 +23,9 @@ jobs:
           ENCODED_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           echo $ENCODED_KEYSTORE | base64 -d > android/app/bizflow.keystore
+      
+      - name: List files in android/app
+        run: ls -la android/app
 
       - name: Build and sign AAB
         env:
