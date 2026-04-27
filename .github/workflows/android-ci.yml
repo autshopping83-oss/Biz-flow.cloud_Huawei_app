@@ -42,7 +42,7 @@ jobs:
           cd android
           echo "$ENCODED_KEYSTORE" | base64 -d > app/bizflow.keystore
           ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=bizflow.keystore \
+            -Pandroid.injected.signing.store.file=$(pwd)/app/bizflow.keystore \
             -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$KEYSTORE_PASSWORD"
