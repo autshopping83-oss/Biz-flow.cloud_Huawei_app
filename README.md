@@ -51,8 +51,8 @@
 ## ⚙️ Configuração
 
 O projeto utiliza variáveis de ambiente para chaves sensíveis:
-- `process.env.API_KEY`: Chave da API do Google Gemini.
-- `supabaseUrl` & `supabaseAnonKey`: Configurações de acesso ao banco de dados (Injetadas via `supabaseClient.ts`).
+- `VITE_GEMINI_API_KEY`: Chave da API do Google Gemini.
+- `VITE_SUPABASE_URL` & `VITE_SUPABASE_ANON_KEY`: Configurações de acesso ao banco de dados (Injetadas via `supabaseClient.ts`).
 
 ## 📄 Licença
 

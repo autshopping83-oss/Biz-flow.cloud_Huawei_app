@@ -8,7 +8,7 @@ A Biz-Flow utiliza as seguintes variáveis de ambiente:
 |------|------|-----------|---------|
 | `VITE_SUPABASE_URL` | **Público** | URL do seu projeto Supabase | `https://ilukexelmihfdezbgcrp.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | **Público** | Chave Anônima do Supabase | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
-| `GEMINI_API_KEY` | **Privado** | Chave da API do Google Gemini | `AIzaSy...` |
+| `VITE_GEMINI_API_KEY` | **Privado** | Chave da API do Google Gemini | `AIzaSy...` |
 | `VITE_WALLET_ID` | **Público** | ID da Carteira de Pagamentos | `1764016232895x517043067934736400` |
 
 ---
@@ -33,7 +33,7 @@ A Biz-Flow utiliza as seguintes variáveis de ambiente:
 1. Acesse: [https://ai.google.dev/](https://ai.google.dev/)
 2. Clique em **"Get API Key"**
 3. Crie um novo projeto ou use um existente
-4. Copie a chave gerada → `GEMINI_API_KEY`
+4. Copie a chave gerada → `VITE_GEMINI_API_KEY`
 
 ⚠️ **PRIVADO** - Nunca exponha esta chave!
 
@@ -84,7 +84,7 @@ vercel env add VITE_SUPABASE_URL
 # (Será solicitado o valor)
 
 vercel env add VITE_SUPABASE_ANON_KEY
-vercel env add GEMINI_API_KEY
+vercel env add VITE_GEMINI_API_KEY
 vercel env add VITE_WALLET_ID
 
 # Verifique o que foi adicionado
@@ -109,7 +109,7 @@ Crie um arquivo `vercel.json` na raiz do projeto:
       "value": "@supabase_key"
     },
     {
-      "key": "GEMINI_API_KEY",
+      "key": "VITE_GEMINI_API_KEY",
       "value": "@gemini_key"
     },
     {
@@ -132,7 +132,7 @@ vercel env pull
 
 - [ ] Supabase URL configurada? (`VITE_SUPABASE_URL`)
 - [ ] Supabase Anon Key configurada? (`VITE_SUPABASE_ANON_KEY`)
-- [ ] Google Gemini API Key configurada? (`GEMINI_API_KEY`)
+- [ ] Google Gemini API Key configurada? (`VITE_GEMINI_API_KEY`)
 - [ ] Wallet ID configurado? (`VITE_WALLET_ID`)
 - [ ] Não há credenciais no arquivo `.env` local?
 - [ ] `.env.local` está no `.gitignore`?
@@ -160,12 +160,12 @@ git push origin main
 - ✅ Usar `.env.example` com valores dummy
 - ✅ Configurar variáveis no dashboard Vercel
 - ✅ Usar `VITE_` para variáveis públicas (frontend)
-- ✅ Manter `GEMINI_API_KEY` como privada
+- ✅ Manter `VITE_GEMINI_API_KEY` como privada
 
 ### ❌ DON'Ts:
 - ❌ Commitar `.env` com valores reais
 - ❌ Compartilhar chaves em chat ou emails
-- ❌ Expor `GEMINI_API_KEY` no código frontend
+- ❌ Expor `VITE_GEMINI_API_KEY` no código sem uso de variáveis de ambiente
 - ❌ Usar mesmas chaves em dev/prod
 
 ---

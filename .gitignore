@@ -22,3 +22,7 @@ dist/
 # Logs
 logs
 *.log
+
+# Environment variables
+.env
+.env.local

@@ -5,8 +5,9 @@ import { GoogleGenAI, Type } from "@google/genai";
 let aiClient: GoogleGenAI | null = null;
 
 try {
-  if (process.env.GEMINI_API_KEY) {
-    aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY as string;
+  if (geminiApiKey) {
+    aiClient = new GoogleGenAI({ apiKey: geminiApiKey });
   }
 } catch (error) {
   console.warn("Gemini Client Initialization failed:", error);
