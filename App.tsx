@@ -96,6 +96,7 @@ const App: React.FC = () => {
   const receiptRef = useRef<HTMLDivElement>(null);
   const ghostReceiptRef = useRef<HTMLDivElement>(null); 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const settingsSignatureCanvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const { notify } = useToast(); 
 
@@ -347,6 +348,63 @@ const App: React.FC = () => {
     } finally {
       setIsSavingSettings(false);
     }
+  };
+
+  const handleStampUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCompanySettings(prev => ({ ...prev, customStamp: reader.result as string }));
+        notify("Carimbo personalizado carregado!", "success");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSettingsSignatureStartDrawing = (e: any) => {
+    const ctx = settingsSignatureCanvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    isDrawing.current = true;
+    const { x, y } = getCoords(e, settingsSignatureCanvasRef.current);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const handleSettingsSignatureDraw = (e: any) => {
+    if (!isDrawing.current) return;
+    const ctx = settingsSignatureCanvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    const { x, y } = getCoords(e, settingsSignatureCanvasRef.current);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const handleSettingsSignatureStopDrawing = () => {
+    isDrawing.current = false;
+    settingsSignatureCanvasRef.current?.getContext('2d')?.beginPath();
+  };
+
+  const saveSettingsSignature = () => {
+    const signatureData = settingsSignatureCanvasRef.current?.toDataURL();
+    if (signatureData) {
+      setCompanySettings(prev => ({ ...prev, signature: signatureData }));
+      notify("Assinatura padrão guardada!", "success");
+    }
+  };
+
+  const clearSettingsSignature = () => {
+    const ctx = settingsSignatureCanvasRef.current?.getContext('2d');
+    if (ctx) {
+      ctx.clearRect(0, 0, 400, 192);
+    }
+  };
+
+  const getCoords = (e: any, canvas: HTMLCanvasElement) => {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: clientX - rect.left, y: clientY - rect.top };
   };
 
   const requestFolderPermission = async () => {
@@ -629,6 +687,7 @@ const App: React.FC = () => {
         await supabase.from('profiles').insert({
           id: authData.user.id,
           company_name: data.companyName,
+          address: data.address,
           currency: data.currency,
           language: data.language,
           logo: data.logo
@@ -795,14 +854,14 @@ const App: React.FC = () => {
               </div>
               <div className={`flex-grow bg-slate-200 dark:bg-slate-950 overflow-y-auto flex flex-col items-center p-4 md:p-10 transition-colors ${mobileTab === 'editor' ? 'hidden md:flex' : 'flex'}`}>
                  <div className="bg-white shadow-2xl origin-top mb-10 overflow-hidden transition-shadow" style={{ transform: 'scale(0.8)', transformOrigin: 'top center' }}>
-                   <DocumentPreview data={formData} ref={receiptRef} captureId="receipt-preview-main" />
+                   <DocumentPreview data={formData} companySettings={companySettings} ref={receiptRef} captureId="receipt-preview-main" />
                  </div>
               </div>
            </div>
 
            <div className="fixed top-0 left-0 pointer-events-none opacity-0" style={{ zIndex: -100 }}>
              <div style={{ position: 'absolute', top: 0, left: '-9999px' }}>
-                <DocumentPreview data={formData} ref={ghostReceiptRef} captureId="receipt-capture-ghost" />
+                <DocumentPreview data={formData} companySettings={companySettings} ref={ghostReceiptRef} captureId="receipt-capture-ghost" />
              </div>
            </div>
         </div>
@@ -875,6 +934,41 @@ const App: React.FC = () => {
                            <i className="fa-solid fa-folder-tree"></i>
                            {localDirHandle ? `Pasta '${localDirHandle.name}' Ativa` : 'Ativar Armazenamento Local'}
                          </button>
+                      </div>
+                      <div className="border-t border-slate-200 dark:border-slate-800 pt-6">
+                         <h4 className="text-md font-bold text-slate-800 dark:text-slate-200 mb-3">Carimbo Personalizado</h4>
+                         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                           Carregue uma imagem personalizada que será usada como carimbo em todos os seus documentos.
+                         </p>
+                         <div className="flex items-center gap-4">
+                           {companySettings.customStamp && <img src={companySettings.customStamp} alt="carimbo" className="w-16 h-16 rounded-lg object-cover bg-slate-100"/>}
+                           <input type="file" onChange={handleStampUpload} accept="image/*" className="text-xs dark:text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"/>
+                         </div>
+                      </div>
+                      <div className="border-t border-slate-200 dark:border-slate-800 pt-6">
+                         <h4 className="text-md font-bold text-slate-800 dark:text-slate-200 mb-3">Assinatura Padrão</h4>
+                         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                           Desenhe sua assinatura padrão que será aplicada automaticamente a todos os documentos.
+                         </p>
+                         <div className="w-full h-32 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 cursor-crosshair mb-4">
+                           <canvas
+                             ref={settingsSignatureCanvasRef}
+                             width={400}
+                             height={128}
+                             className="w-full h-full"
+                             onMouseDown={handleSettingsSignatureStartDrawing}
+                             onMouseMove={handleSettingsSignatureDraw}
+                             onMouseUp={handleSettingsSignatureStopDrawing}
+                             onMouseLeave={handleSettingsSignatureStopDrawing}
+                             onTouchStart={handleSettingsSignatureStartDrawing}
+                             onTouchMove={handleSettingsSignatureDraw}
+                             onTouchEnd={handleSettingsSignatureStopDrawing}
+                           />
+                         </div>
+                         <div className="flex gap-2">
+                           <button onClick={clearSettingsSignature} className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-white font-bold text-xs py-2 px-4 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">Limpar</button>
+                           <button onClick={saveSettingsSignature} className="bg-purple-600 text-white font-bold text-xs py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">Guardar Assinatura</button>
+                         </div>
                       </div>
                  </div>
                  <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t dark:border-slate-800 flex gap-4 transition-colors">

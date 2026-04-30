@@ -42,6 +42,7 @@ export const AuthScreens: React.FC<AuthProps> = ({ onLogin, onRegister, onGoogle
     email: '',
     password: '',
     companyName: '',
+    address: '',
     currency: 'MZN',
     language: 'pt',
     logo: ''
@@ -329,6 +330,14 @@ export const AuthScreens: React.FC<AuthProps> = ({ onLogin, onRegister, onGoogle
              />
           </div>
 
+          <div className="relative">
+             <i className="fa-solid fa-location-dot absolute left-3 top-3.5 text-slate-400 text-xs"></i>
+             <input placeholder="Morada da Empresa"
+                className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl pl-8 pr-3 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white"
+                value={registerData.address}
+                onChange={e => setRegisterData({...registerData, address: e.target.value})}
+             />
+          </div>
           <div className="grid grid-cols-2 gap-4 pt-2">
              <div>
                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Moeda</label>

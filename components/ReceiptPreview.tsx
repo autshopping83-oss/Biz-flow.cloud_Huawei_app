@@ -1,14 +1,15 @@
 
 import React, { forwardRef } from 'react';
-import { ReceiptData } from '../types';
+import { ReceiptData, CompanySettings } from '../types';
 import { getTranslation, formatMoney } from '../services/translationService';
 
 interface Props {
   data: ReceiptData;
+  companySettings?: CompanySettings;
   captureId?: string;
 }
 
-const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, captureId = "receipt-capture-area" }, ref) => {
+const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, companySettings, captureId = "receipt-capture-area" }, ref) => {
   const lang = data.language || 'pt';
   const currency = data.currency || 'MZN';
 
@@ -76,11 +77,19 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, captureId = "
       </div>
 
       {/* Watermark Stamp */}
-      {data.stampText && (
+      {(data.stampText || companySettings?.customStamp) && (
         <div className="absolute top-[160px] right-[40px] z-0 pointer-events-none select-none">
-           <div className={getStampStyle(data.stampText)}>
-             {data.stampText}
-           </div>
+           {companySettings?.customStamp ? (
+             <img 
+               src={companySettings.customStamp} 
+               alt="Custom Stamp" 
+               className="w-32 h-32 object-contain opacity-30 mix-blend-multiply transform -rotate-12" 
+             />
+           ) : data.stampText ? (
+             <div className={getStampStyle(data.stampText)}>
+               {data.stampText}
+             </div>
+           ) : null}
         </div>
       )}
 
@@ -167,9 +176,9 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, captureId = "
         <div className="flex justify-between items-end border-t border-slate-100 pt-8 pb-8">
            <div className="text-center w-[250px]">
                <div className="h-20 flex flex-col justify-end items-center relative mb-2">
-                 {data.signatureData && (
+                 {(data.signatureData || companySettings?.signature) && (
                    <img 
-                     src={data.signatureData} 
+                     src={data.signatureData || companySettings?.signature} 
                      alt="Signature" 
                      className="absolute bottom-1 max-h-24 max-w-full object-contain mix-blend-multiply" 
                    />

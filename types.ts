@@ -67,6 +67,8 @@ export interface CompanySettings {
   theme?: 'light' | 'dark';
   plan: SubscriptionPlan;
   isAdmin?: boolean; // New field to track admin status
+  customStamp?: string; // Base64 image for custom stamp
+  signature?: string; // Base64 image for digital signature
 }
 
 export interface Comment {
