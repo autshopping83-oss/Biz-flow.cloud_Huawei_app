@@ -61,10 +61,46 @@ const Input = ({ label, icon, ...props }: any) => (
 // --- MAIN COMPONENT ---
 
 export const EditorForm: React.FC<EditorFormProps> = ({
-  formData, onChange, newItem, onNewItemChange, onAddItem, onRemoveItem, 
+  formData, onChange, newItem, onNewItemChange, onAddItem, onRemoveItem,
   onEnhanceDescription, isEnhancing, t, fMoney, onInitNew, onSign, statusOptions, onClearClient,
   savedClients, savedProducts, onConvertQuote
 }) => {
+
+  // State for new product save modal
+  const [showSaveProductModal, setShowSaveProductModal] = React.useState(false);
+  const [pendingItem, setPendingItem] = React.useState<Partial<LineItem> | null>(null);
+
+  const handleAddItem = () => {
+    if (!newItem.description?.trim()) return;
+
+    // Check if product exists in catalog
+    const existingProduct = savedProducts.find(p =>
+      p.description.toLowerCase() === newItem.description!.toLowerCase()
+    );
+
+    if (!existingProduct) {
+      // Product doesn't exist, show save modal
+      setPendingItem(newItem);
+      setShowSaveProductModal(true);
+    } else {
+      // Product exists, add directly
+      onAddItem();
+    }
+  };
+
+  const handleSaveProductAndAdd = () => {
+    // TODO: Implement save to catalog
+    console.log('Saving product to catalog:', pendingItem);
+    setShowSaveProductModal(false);
+    setPendingItem(null);
+    onAddItem();
+  };
+
+  const handleAddWithoutSaving = () => {
+    setShowSaveProductModal(false);
+    setPendingItem(null);
+    onAddItem();
+  };
 
   return (
     <div className="space-y-6 animate-slideUp">
@@ -174,47 +210,81 @@ export const EditorForm: React.FC<EditorFormProps> = ({
           <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mt-4 shadow-sm">
               <div className="flex gap-2 mb-3">
                  <div className="flex-1 relative">
-                   <input 
-                      name="description" 
-                      value={newItem.description} 
-                      onChange={onNewItemChange} 
-                      placeholder={t('description')} 
-                      className="w-full bg-white dark:bg-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg p-2.5 pl-3 text-sm outline-none focus:border-blue-500 transition-colors"
-                      list="product-list"
+                   <input
+                      name="description"
+                      value={newItem.description}
+                      onChange={onNewItemChange}
+                      placeholder="Digite o nome do produto..."
+                      className="w-full bg-white dark:bg-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg p-2.5 pl-3 pr-10 text-sm outline-none focus:border-blue-500 transition-colors"
                       autoComplete="off"
                    />
-                   <datalist id="product-list">
-                     {savedProducts.map((p, i) => <option key={i} value={p.description} />)}
-                   </datalist>
+
+                   {/* Product Suggestions Dropdown */}
+                   {newItem.description && savedProducts.length > 0 && (
+                     <div className="absolute top-full left-0 right-0 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto mt-1">
+                       {savedProducts
+                         .filter(p => p.description.toLowerCase().includes(newItem.description.toLowerCase()))
+                         .slice(0, 5)
+                         .map((product, index) => (
+                           <button
+                             key={index}
+                             type="button"
+                             onClick={() => {
+                               setNewItem(prev => ({
+                                 ...prev,
+                                 description: product.description,
+                                 unitPrice: product.unitPrice
+                               }));
+                             }}
+                             className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors flex justify-between items-center"
+                           >
+                             <span className="text-sm">{product.description}</span>
+                             <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                               {fMoney(product.unitPrice)}
+                             </span>
+                           </button>
+                         ))}
+                       {savedProducts.filter(p => p.description.toLowerCase().includes(newItem.description.toLowerCase())).length === 0 && (
+                         <div className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400 text-center">
+                           Nenhum produto encontrado
+                         </div>
+                       )}
+                     </div>
+                   )}
+
+                   {/* Search Icon */}
+                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm pointer-events-none">
+                     <i className="fa-solid fa-search"></i>
+                   </div>
                  </div>
-                 <button 
-                   onClick={onEnhanceDescription} 
-                   disabled={isEnhancing || !newItem.description} 
+                 <button
+                   onClick={onEnhanceDescription}
+                   disabled={isEnhancing || !newItem.description}
                    className="w-10 flex items-center justify-center bg-white dark:bg-slate-700 border border-indigo-100 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition"
                    title="Melhorar com IA"
                  >
                     {isEnhancing ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-wand-magic-sparkles"></i>}
                  </button>
               </div>
-              
+
               <div className="flex gap-2 items-stretch">
-                  <input 
-                    type="number" name="quantity" min="1" 
-                    value={newItem.quantity} onChange={onNewItemChange} 
-                    className="w-[70px] bg-white dark:bg-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg p-2.5 text-sm text-center focus:ring-2 focus:ring-blue-500/20 outline-none" 
-                    placeholder="Qtd" 
+                  <input
+                    type="number" name="quantity" min="1"
+                    value={newItem.quantity} onChange={onNewItemChange}
+                    className="w-[70px] bg-white dark:bg-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg p-2.5 text-sm text-center focus:ring-2 focus:ring-blue-500/20 outline-none"
+                    placeholder="Qtd"
                   />
-                  
+
                   {/* Price + Button Group (Merged) */}
                   <div className="flex flex-1 relative isolate min-w-0">
-                      <input 
-                        type="number" name="unitPrice" min="0" 
-                        value={newItem.unitPrice} onChange={onNewItemChange} 
-                        className="flex-1 min-w-0 bg-white dark:bg-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-l-lg rounded-r-none border-r-0 p-2.5 text-sm focus:z-10 focus:ring-2 focus:ring-blue-500/20 outline-none" 
-                        placeholder="Preço" 
+                      <input
+                        type="number" name="unitPrice" min="0"
+                        value={newItem.unitPrice} onChange={onNewItemChange}
+                        className="flex-1 min-w-0 bg-white dark:bg-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-l-lg rounded-r-none border-r-0 p-2.5 text-sm focus:z-10 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                        placeholder="Preço"
                       />
-                      <button 
-                        onClick={onAddItem} 
+                      <button
+                        onClick={handleAddItem} 
                         className="flex-none w-14 bg-blue-600 text-white rounded-r-lg rounded-l-none text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center z-0 active:bg-blue-800"
                         title="Adicionar"
                       >
@@ -282,6 +352,54 @@ export const EditorForm: React.FC<EditorFormProps> = ({
                </button>
            </div>
        </Section>
+
+       {/* Save New Product Modal */}
+       {showSaveProductModal && pendingItem && (
+         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+           <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+             <div className="p-6">
+               <div className="text-center mb-6">
+                 <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                   <i className="fa-solid fa-box text-blue-600 dark:text-blue-400 text-2xl"></i>
+                 </div>
+                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                   Produto Novo Detectado
+                 </h3>
+                 <p className="text-slate-600 dark:text-slate-400 text-sm">
+                   "{pendingItem.description}" não está no seu catálogo. Deseja salvá-lo para facilitar futuras vendas?
+                 </p>
+               </div>
+
+               <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 mb-6">
+                 <div className="flex justify-between items-center text-sm">
+                   <span className="text-slate-600 dark:text-slate-400">Produto:</span>
+                   <span className="font-medium text-slate-900 dark:text-white">{pendingItem.description}</span>
+                 </div>
+                 <div className="flex justify-between items-center text-sm mt-2">
+                   <span className="text-slate-600 dark:text-slate-400">Preço:</span>
+                   <span className="font-medium text-blue-600 dark:text-blue-400">{fMoney(pendingItem.unitPrice || 0)}</span>
+                 </div>
+               </div>
+
+               <div className="flex gap-3">
+                 <button
+                   onClick={handleSaveProductAndAdd}
+                   className="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium"
+                 >
+                   Salvar e Adicionar
+                 </button>
+                 <button
+                   onClick={handleAddWithoutSaving}
+                   className="flex-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                 >
+                   Apenas Adicionar
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+
     </div>
   );
 };

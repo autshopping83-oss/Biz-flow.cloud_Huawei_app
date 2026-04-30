@@ -1,5 +1,5 @@
 
-import { ReceiptData, CompanySettings, DocumentType, Comment, Transaction, SavedClient, SavedProduct } from '../types';
+import { ReceiptData, CompanySettings, DocumentType, Comment, Transaction, SavedClient, SavedProduct, Product } from '../types';
 import { db } from './db';
 import { syncService } from './syncService';
 
@@ -48,6 +48,63 @@ export const getSavedProducts = async (userId: string): Promise<SavedProduct[]> 
     return await db.products.where('userId').equals(userId).toArray();
   } catch (e) {
     return [];
+  }
+};
+
+// --- PRODUCT CATALOG CRUD FUNCTIONS ---
+
+export const getProducts = async (userId: string): Promise<Product[]> => {
+  if (!userId) return [];
+  try {
+    return await db.catalog.where('userId').equals(userId).sortBy('name');
+  } catch (e) {
+    return [];
+  }
+};
+
+export const addProduct = async (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product> => {
+  try {
+    const newProduct: Product = {
+      ...product,
+      id: `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+
+    await db.catalog.add(newProduct);
+    await syncService.addToQueue('catalog', 'INSERT', newProduct);
+
+    return newProduct;
+  } catch (e) {
+    throw new Error('Erro ao adicionar produto');
+  }
+};
+
+export const updateProduct = async (productId: string, updates: Partial<Pick<Product, 'name' | 'price' | 'category'>>): Promise<void> => {
+  try {
+    await db.catalog.update(productId, {
+      ...updates,
+      updatedAt: Date.now()
+    });
+
+    const updatedProduct = await db.catalog.get(productId);
+    if (updatedProduct) {
+      await syncService.addToQueue('catalog', 'UPDATE', updatedProduct);
+    }
+  } catch (e) {
+    throw new Error('Erro ao atualizar produto');
+  }
+};
+
+export const deleteProduct = async (productId: string): Promise<void> => {
+  try {
+    const product = await db.catalog.get(productId);
+    if (product) {
+      await db.catalog.delete(productId);
+      await syncService.addToQueue('catalog', 'DELETE', product);
+    }
+  } catch (e) {
+    throw new Error('Erro ao excluir produto');
   }
 };
 

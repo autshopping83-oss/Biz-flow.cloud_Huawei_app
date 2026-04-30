@@ -1,6 +1,6 @@
 
 import Dexie, { Table } from 'dexie';
-import { ReceiptData, Transaction, SavedClient, SavedProduct, CompanySettings } from '../types';
+import { ReceiptData, Transaction, SavedClient, SavedProduct, CompanySettings, Product } from '../types';
 
 export interface SyncQueueItem {
   id?: number;
@@ -15,6 +15,7 @@ export class BizFlowDB extends Dexie {
   transactions!: Table<Transaction>;
   clients!: Table<SavedClient>;
   products!: Table<SavedProduct>;
+  catalog!: Table<Product>;
   settings!: Table<CompanySettings & { id: string }>;
   syncQueue!: Table<SyncQueueItem>;
 
@@ -25,6 +26,7 @@ export class BizFlowDB extends Dexie {
       transactions: 'id, userId, date, type, receiptId',
       clients: '++id, userId, name',
       products: '++id, userId, description',
+      catalog: 'id, userId, name, category',
       settings: 'id, userId',
       syncQueue: '++id, table, timestamp'
     });

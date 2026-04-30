@@ -109,6 +109,17 @@ export interface SavedProduct {
   userId?: string;
 }
 
+// --- NEW PRODUCT CATALOG INTERFACE ---
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  category?: string;
+  userId: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface PaymentRequest {
   id: string;
   user_id: string;
