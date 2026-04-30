@@ -149,6 +149,12 @@ const DocumentPreview = forwardRef<HTMLDivElement, Props>(({ data, captureId = "
                      <span className="font-mono">{formatMoney(data.taxAmount, currency, lang)}</span>
                  </div>
              )}
+             {data.type === 'INVOICE_RECEIPT' && data.paymentMethod && (
+               <div className="flex justify-between text-sm text-slate-600 mb-3">
+                 <span className="font-bold">{t('paymentMethod')}</span>
+                 <span className="font-mono uppercase">{t(data.paymentMethod.toLowerCase() as any)}</span>
+               </div>
+             )}
              <div className="flex justify-between pt-6 items-center">
                  <span className="text-[11px] font-black uppercase tracking-[0.2em]">{t('finalTotal')}</span>
                  <div className="bg-slate-900 text-white px-5 py-3 rounded-lg text-2xl font-black font-mono shadow-xl">

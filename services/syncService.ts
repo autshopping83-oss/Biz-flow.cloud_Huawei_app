@@ -63,6 +63,43 @@ class SyncService {
     try {
       const { table, action, data } = item;
       
+      if (table === 'receipt_transaction_bundle') {
+        const { receipt, transaction } = data;
+        const receiptPayload = { ...receipt };
+        const transactionPayload = { ...transaction };
+
+        if (receiptPayload.userId) {
+          receiptPayload.user_id = receiptPayload.userId;
+          delete receiptPayload.userId;
+        }
+        if (transactionPayload.userId) {
+          transactionPayload.user_id = transactionPayload.userId;
+          delete transactionPayload.userId;
+        }
+        if (transactionPayload.receiptId) {
+          transactionPayload.receipt_id = transactionPayload.receiptId;
+          delete transactionPayload.receiptId;
+        }
+
+        const { error: receiptError } = await supabase
+          .from('receipts')
+          .upsert(receiptPayload);
+        if (receiptError) {
+          console.error('Error syncing receipt_transaction_bundle (receipt):', receiptError);
+          return false;
+        }
+
+        const { error: transactionError } = await supabase
+          .from('transactions')
+          .upsert(transactionPayload);
+        if (transactionError) {
+          console.error('Error syncing receipt_transaction_bundle (transaction):', transactionError);
+          return false;
+        }
+
+        return true;
+      }
+
       let supabaseTable = table;
       let payload = { ...data };
 

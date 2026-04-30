@@ -1,6 +1,5 @@
 
 import React, { useEffect, useState } from 'react';
-import { getPendingRequests, approveRequest, rejectRequest } from '../services/paymentService';
 import { PaymentRequest } from '../types';
 import { useToast } from './ToastContext';
 
@@ -15,8 +14,7 @@ export const AdminDashboard: React.FC<Props> = ({ onClose }) => {
 
   const loadData = async () => {
     setLoading(true);
-    const data = await getPendingRequests();
-    setRequests(data);
+    setRequests([]);
     setLoading(false);
   };
 
@@ -24,25 +22,12 @@ export const AdminDashboard: React.FC<Props> = ({ onClose }) => {
     loadData();
   }, []);
 
-  const handleApprove = async (req: PaymentRequest) => {
-    if(!confirm(`Aprovar PRO para ${req.user_name}?`)) return;
-    
-    const success = await approveRequest(req.id, req.user_id);
-    if (success) {
-        notify(`Plano PRO ativado para ${req.user_name}`, 'success');
-        loadData(); // Reload list
-    } else {
-        notify("Erro ao aprovar.", 'error');
-    }
+  const handleApprove = async () => {
+    notify('O serviço de pagamento atual foi removido. Atualize para um novo provedor.', 'info');
   };
 
-  const handleReject = async (id: string) => {
-    if(!confirm("Rejeitar solicitação?")) return;
-    const success = await rejectRequest(id);
-    if (success) {
-        notify("Solicitação rejeitada.", 'info');
-        loadData();
-    }
+  const handleReject = async () => {
+    notify('O serviço de pagamento atual foi removido. Atualize para um novo provedor.', 'info');
   };
 
   return (

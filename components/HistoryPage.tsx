@@ -15,7 +15,7 @@ interface Props {
 
 export const HistoryPage: React.FC<Props> = ({ history, onBack, onLoadDocument, onDeleteDocument, onDuplicateDocument, currency, lang }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'ALL' | 'INVOICE' | 'RECEIPT' | 'QUOTE'>('ALL');
+  const [filterType, setFilterType] = useState<'ALL' | 'INVOICE' | 'RECEIPT' | 'QUOTE' | 'INVOICE_RECEIPT'>('ALL');
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'total-desc' | 'total-asc'>('date-desc');
 
   const filteredHistory = useMemo(() => {
@@ -59,8 +59,8 @@ export const HistoryPage: React.FC<Props> = ({ history, onBack, onLoadDocument, 
       style={{ animation: 'fadeInUp 0.3s ease-out both', animationDelay: `${index * 0.03}s` }}
     >
       <div className="flex items-center gap-4 flex-1 overflow-hidden">
-        <div className={`w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-black shadow-inner ${doc.type === 'INVOICE' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/50' : doc.type === 'QUOTE' ? 'bg-purple-50 text-purple-600 dark:bg-purple-900/50' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/50'}`}>
-            {doc.type === 'INVOICE' ? 'FAT' : doc.type === 'QUOTE' ? 'COT' : 'REC'}
+        <div className={`w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-black shadow-inner ${doc.type === 'INVOICE' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/50' : doc.type === 'INVOICE_RECEIPT' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/50' : doc.type === 'QUOTE' ? 'bg-purple-50 text-purple-600 dark:bg-purple-900/50' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/50'}`}>
+            {doc.type === 'INVOICE' ? 'FAT' : doc.type === 'INVOICE_RECEIPT' ? 'FAT-REC' : doc.type === 'QUOTE' ? 'COT' : 'REC'}
         </div>
         <div className="overflow-hidden">
           <p className="font-bold text-slate-900 dark:text-white truncate">{doc.clientName || 'Sem Cliente'}</p>
@@ -119,6 +119,7 @@ export const HistoryPage: React.FC<Props> = ({ history, onBack, onLoadDocument, 
             >
               <option value="ALL">Todos Tipos</option>
               <option value="INVOICE">Faturas</option>
+              <option value="INVOICE_RECEIPT">Factura-Recibo</option>
               <option value="RECEIPT">Recibos</option>
               <option value="QUOTE">Cotações</option>
             </select>

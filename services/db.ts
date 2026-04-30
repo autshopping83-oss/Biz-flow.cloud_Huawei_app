@@ -22,7 +22,7 @@ export class BizFlowDB extends Dexie {
     super('BizFlowDB');
     this.version(1).stores({
       receipts: 'id, userId, clientName, date, type',
-      transactions: 'id, userId, date, type',
+      transactions: 'id, userId, date, type, receiptId',
       clients: '++id, userId, name',
       products: '++id, userId, description',
       settings: 'id, userId',

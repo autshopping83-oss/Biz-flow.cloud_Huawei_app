@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { useToast } from './ToastContext';
-import { uploadPaymentProof } from '../services/paymentService';
 
 interface Props {
   onClose: () => void;
@@ -35,16 +34,8 @@ export const PaymentModal: React.FC<Props> = ({ onClose, userEmail = '', userNam
     setLoading(true);
 
     try {
-        const success = await uploadPaymentProof(file, userId, userName || userEmail);
-        
-        if (success) {
-            notify("Comprovativo enviado! Vamos analisar e ativar seu PRO em breve.", "success");
-            onClose();
-        } else {
-            notify("Erro ao enviar. Tente novamente ou contate o suporte.", "error");
-        }
-    } catch (e) {
-        notify("Erro de conexão.", "error");
+        notify("O serviço de pagamento atual foi removido. Em breve haverá integração com um novo provedor.", "info");
+        onClose();
     } finally {
         setLoading(false);
     }

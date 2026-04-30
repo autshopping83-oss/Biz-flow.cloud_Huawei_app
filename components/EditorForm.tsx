@@ -78,6 +78,12 @@ export const EditorForm: React.FC<EditorFormProps> = ({
             <i className="fa-solid fa-file-invoice"></i> {t('invoice')}
           </button>
           <button 
+            onClick={() => formData.type !== 'INVOICE_RECEIPT' && onInitNew('INVOICE_RECEIPT')}
+            className={`flex-1 py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 ${formData.type === 'INVOICE_RECEIPT' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm ring-1 ring-black/5' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+          >
+            <i className="fa-solid fa-file-invoice-dollar"></i> {t('invoiceReceipt')}
+          </button>
+          <button 
             onClick={() => formData.type !== 'RECEIPT' && onInitNew('RECEIPT')}
             className={`flex-1 py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 ${formData.type === 'RECEIPT' ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-white shadow-sm ring-1 ring-black/5' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
           >
@@ -254,6 +260,22 @@ export const EditorForm: React.FC<EditorFormProps> = ({
                           {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                       </select>
                   </div>
+               </div>
+               <div>
+                 {formData.type === 'INVOICE_RECEIPT' && (
+                   <div>
+                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">{t('paymentMethod')}</label>
+                     <div className="relative">
+                         <i className="fa-solid fa-dollar-sign absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs"></i>
+                         <select name="paymentMethod" value={formData.paymentMethod || ''} onChange={onChange} className="w-full bg-white dark:bg-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg pl-8 pr-2 py-2.5 text-sm font-medium appearance-none cursor-pointer hover:border-slate-300 transition-colors">
+                           <option value="">{t('selectPayment')}</option>
+                           <option value="CASH">{t('cash')}</option>
+                           <option value="CARD">{t('card')}</option>
+                           <option value="BANK_TRANSFER">{t('bankTransfer')}</option>
+                         </select>
+                     </div>
+                   </div>
+                 )}
                </div>
                <button onClick={onSign} className={`w-full mt-auto h-[42px] rounded-lg text-sm font-bold border transition-all flex items-center justify-center gap-2 shadow-sm ${formData.signatureData ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
                    <i className="fa-solid fa-pen-nib"></i> {formData.signatureData ? 'Assinado' : 'Assinar'}

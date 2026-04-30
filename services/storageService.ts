@@ -89,8 +89,26 @@ export const saveReceipt = async (receipt: ReceiptData, userId: string): Promise
   try {
     const dataWithUser = { ...receipt, userId };
     await db.receipts.put(dataWithUser);
-    await syncService.addToQueue('receipts', 'INSERT', dataWithUser);
-    
+
+    if (receipt.type === 'INVOICE_RECEIPT') {
+      const transaction: Transaction = {
+        id: `txn-${receipt.id}`,
+        userId,
+        type: 'INCOME',
+        amount: receipt.total,
+        description: `Venda ${receipt.number}`,
+        category: 'Sales',
+        date: receipt.date,
+        timestamp: Date.now(),
+        receiptId: receipt.id,
+      };
+
+      await db.transactions.put(transaction);
+      await syncService.addToQueue('receipt_transaction_bundle', 'INSERT', { receipt: dataWithUser, transaction });
+    } else {
+      await syncService.addToQueue('receipts', 'INSERT', dataWithUser);
+    }
+
     await learnClient(receipt, userId);
     await learnProducts(receipt, userId);
     
@@ -126,7 +144,7 @@ export const checkDailyLimit = (userId: string): boolean => {
 };
 
 export const generateNextReceiptNumber = (history: ReceiptData[], type: DocumentType): string => {
-  let prefix = type === 'INVOICE' ? 'FAT' : type === 'QUOTE' ? 'COT' : 'REC';
+  let prefix = type === 'INVOICE' ? 'FAT' : type === 'INVOICE_RECEIPT' ? 'FAT-REC' : type === 'QUOTE' ? 'COT' : 'REC';
   const typeHistory = history.filter(h => (h.type || 'RECEIPT') === type);
   if (typeHistory.length === 0) return `${prefix}-0001`;
   const latest = typeHistory[0].number; 

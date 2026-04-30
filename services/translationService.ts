@@ -247,7 +247,7 @@ type TranslationKey =
   | 'finalTotal' | 'signature' | 'generatedBy' | 'page' | 'newInvoice' | 'newReceipt' | 'newQuote'
   | 'dashboard' | 'settings' | 'save' | 'client' | 'items' | 'status' | 'stamp' | 'addClient'
   | 'finance' | 'income' | 'expense' | 'balance' | 'newTransaction' | 'category'
-  | 'convertToInvoice' | 'validUntil' | 'taxId' | 'joinCommunity' | 'whatsappPromo';
+  | 'convertToInvoice' | 'validUntil' | 'taxId' | 'invoiceReceipt' | 'paymentMethod' | 'selectPayment' | 'cash' | 'card' | 'bankTransfer' | 'joinCommunity' | 'whatsappPromo';
 
 const TRANSLATIONS: Record<string, Record<TranslationKey, string>> = {
   pt: {
@@ -289,6 +289,12 @@ const TRANSLATIONS: Record<string, Record<TranslationKey, string>> = {
     convertToInvoice: 'Converter em Fatura',
     validUntil: 'Válido até',
     taxId: 'Tax ID / NUIT',
+    invoiceReceipt: 'Fatura-Recibo',
+    paymentMethod: 'Método de Pagamento',
+    selectPayment: 'Selecione o Método',
+    cash: 'Dinheiro',
+    card: 'Cartão',
+    bankTransfer: 'Transferência',
     joinCommunity: 'Entrar no Grupo WhatsApp',
     whatsappPromo: 'Junte-se à nossa comunidade oficial para dicas e suporte!'
   },
@@ -331,6 +337,12 @@ const TRANSLATIONS: Record<string, Record<TranslationKey, string>> = {
     convertToInvoice: 'Convert to Invoice',
     validUntil: 'Valid Until',
     taxId: 'Tax ID',
+    invoiceReceipt: 'Invoice-Receipt',
+    paymentMethod: 'Payment Method',
+    selectPayment: 'Select Payment',
+    cash: 'Cash',
+    card: 'Card',
+    bankTransfer: 'Bank Transfer',
     joinCommunity: 'Join WhatsApp Group',
     whatsappPromo: 'Join our official community for tips and support!'
   },
@@ -373,6 +385,12 @@ const TRANSLATIONS: Record<string, Record<TranslationKey, string>> = {
     convertToInvoice: 'Convertir en Factura',
     validUntil: 'Válido hasta',
     taxId: 'ID Fiscal',
+    invoiceReceipt: 'Factura-Recibo',
+    paymentMethod: 'Método de Pago',
+    selectPayment: 'Seleccione el Pago',
+    cash: 'Efectivo',
+    card: 'Tarjeta',
+    bankTransfer: 'Transferencia',
     joinCommunity: 'Unirse al Grupo WhatsApp',
     whatsappPromo: '¡Únete a nuestra comunidad oficial para consejos y soporte!'
   },
@@ -415,6 +433,12 @@ const TRANSLATIONS: Record<string, Record<TranslationKey, string>> = {
     convertToInvoice: 'Convertir en Facture',
     validUntil: 'Valable jusqu\'au',
     taxId: 'Numéro Fiscal',
+    invoiceReceipt: 'Facture-Reçu',
+    paymentMethod: 'Mode de Paiement',
+    selectPayment: 'Sélectionnez le Paiement',
+    cash: 'Espèces',
+    card: 'Carte',
+    bankTransfer: 'Virement',
     joinCommunity: 'Rejoindre le groupe WhatsApp',
     whatsappPromo: 'Rejoignez notre communauté officielle pour conseils et support !'
   },
@@ -457,6 +481,12 @@ const TRANSLATIONS: Record<string, Record<TranslationKey, string>> = {
     convertToInvoice: 'In Rechnung umwandeln',
     validUntil: 'Gültig bis',
     taxId: 'Steuernummer',
+    invoiceReceipt: 'Rechnung-Quittung',
+    paymentMethod: 'Zahlungsmethode',
+    selectPayment: 'Zahlung wählen',
+    cash: 'Bar',
+    card: 'Karte',
+    bankTransfer: 'Überweisung',
     joinCommunity: 'WhatsApp-Gruppe beitreten',
     whatsappPromo: 'Treten Sie unserer offiziellen Community bei!'
   }

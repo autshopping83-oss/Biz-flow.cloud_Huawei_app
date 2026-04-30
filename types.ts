@@ -1,5 +1,5 @@
 
-export type DocumentType = 'RECEIPT' | 'INVOICE' | 'QUOTE';
+export type DocumentType = 'RECEIPT' | 'INVOICE' | 'QUOTE' | 'INVOICE_RECEIPT';
 
 export interface LineItem {
   id: string;
@@ -42,6 +42,7 @@ export interface ReceiptData {
   taxAmount: number;
   discount: number; 
   total: number;
+  paymentMethod?: string;
   
   // Visuals
   stampText?: string;
@@ -82,12 +83,14 @@ export type TransactionType = 'INCOME' | 'EXPENSE';
 
 export interface Transaction {
   id: string;
+  userId?: string;
   type: TransactionType;
   amount: number;
   description: string;
   category: string;
   date: string; // ISO YYYY-MM-DD
   timestamp: number;
+  receiptId?: string;
 }
 
 export interface SavedClient {
@@ -95,11 +98,13 @@ export interface SavedClient {
   contact: string;
   nuit: string;
   location: string;
+  userId?: string;
 }
 
 export interface SavedProduct {
   description: string;
   unitPrice: number;
+  userId?: string;
 }
 
 export interface PaymentRequest {

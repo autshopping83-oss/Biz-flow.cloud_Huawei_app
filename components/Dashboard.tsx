@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ReceiptData, CompanySettings } from '../types';
+import { ReceiptData, CompanySettings, DocumentType } from '../types';
 import { formatMoney } from '../services/translationService';
 import { CommunityFeed } from './CommunityFeed';
 import { FinanceManager } from './FinanceManager';
@@ -10,7 +10,7 @@ interface DashboardProps {
   history: ReceiptData[];
   companySettings: CompanySettings;
   onLogout: () => void;
-  onNewDocument: (type: 'INVOICE' | 'RECEIPT' | 'QUOTE') => void;
+  onNewDocument: (type: DocumentType) => void;
   onOpenSettings: () => void;
   onLoadDocument: (doc: ReceiptData) => void;
   onViewHistory: () => void;
@@ -208,6 +208,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                         <h3 className="font-bold text-2xl tracking-tight">{t('newReceipt')}</h3>
                         <p className="text-emerald-100 text-sm mt-2 opacity-90 font-medium">Comprovativo.</p>
+                     </button>
+
+                     {/* Invoice-Receipt Card */}
+                     <button onClick={() => onNewDocument('INVOICE_RECEIPT')} 
+                        className="group relative overflow-hidden bg-gradient-to-br from-indigo-500 to-violet-600 rounded-[20px] p-7 text-white shadow-xl shadow-indigo-600/20 hover:shadow-2xl hover:shadow-indigo-600/30 hover:scale-[1.02] transition-all duration-300 text-left border border-white/10"
+                     >
+                        <div className="absolute -top-4 -right-4 p-4 opacity-[0.08] group-hover:opacity-20 transition-opacity group-hover:scale-110 duration-500"><i className="fa-solid fa-file-invoice-dollar text-9xl"></i></div>
+                        <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-5 text-white text-2xl shadow-inner border border-white/20 group-hover:rotate-6 transition-transform">
+                           <i className="fa-solid fa-plus"></i>
+                        </div>
+                        <h3 className="font-bold text-2xl tracking-tight">{t('invoiceReceipt')}</h3>
+                        <p className="text-indigo-100 text-sm mt-2 opacity-90 font-medium">Factura-Recibo com seleção de pagamento.</p>
                      </button>
 
                      {/* Quote Card */}
