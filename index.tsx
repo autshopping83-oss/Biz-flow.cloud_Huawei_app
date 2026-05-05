@@ -1,59 +1,9 @@
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ToastProvider } from './components/ToastContext';
-
-interface ErrorBoundaryProps {
-  children?: ReactNode;
-}
-
-interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-}
-
-// --- ERROR BOUNDARY COMPONENT ---
-// Captura erros de renderização para evitar a "Tela Branca da Morte"
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  public state: ErrorBoundaryState = {
-    hasError: false,
-    error: null
-  };
-
-  // Explicitly declare props to satisfy TypeScript if inference fails
-  declare props: Readonly<ErrorBoundaryProps>;
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ padding: '40px', textAlign: 'center', fontFamily: 'sans-serif', color: '#333' }}>
-          <h1 style={{ fontSize: '24px', marginBottom: '10px' }}>Oops! Algo correu mal.</h1>
-          <p style={{ marginBottom: '20px', color: '#666' }}>A aplicação encontrou um erro inesperado.</p>
-          <div style={{ background: '#f8d7da', color: '#721c24', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left', overflow: 'auto' }}>
-            <code style={{ fontSize: '12px' }}>{this.state.error?.message}</code>
-          </div>
-          <button 
-            onClick={() => window.location.reload()} 
-            style={{ backgroundColor: '#2563EB', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
-          >
-            Recarregar Página
-          </button>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // --- INITIALIZATION ---
 

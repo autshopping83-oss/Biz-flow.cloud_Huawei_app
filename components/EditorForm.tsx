@@ -24,6 +24,7 @@ interface EditorFormProps {
   savedProducts: SavedProduct[];
   onConvertQuote?: () => void;
   userId?: string;
+  onThemeChange?: (theme: 'color' | 'bw') => void;
 }
 
 // --- HELPER COMPONENTS (Moved outside to prevent re-render focus loss) ---
@@ -333,6 +334,30 @@ export const EditorForm: React.FC<EditorFormProps> = ({
               </div>
           </div>
        </Section>
+
+       {/* Theme Selector */}
+       <div className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900 rounded-xl p-1 border border-slate-200 dark:border-slate-700/50 flex shadow-sm">
+          <button
+            onClick={() => onThemeChange?.('color')}
+            className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+              formData.documentTheme === 'color' 
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20' 
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+          >
+            <i className="fa-solid fa-palette"></i> Colorido
+          </button>
+          <button
+            onClick={() => onThemeChange?.('bw')}
+            className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+              formData.documentTheme === 'bw' 
+                ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:bg-white dark:text-slate-900' 
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+          >
+            <i className="fa-solid fa-circle"></i> Preto & Branco
+          </button>
+       </div>
 
        <Section title="Totais & Estado" icon="fa-calculator">
            <div className="space-y-3 text-sm">

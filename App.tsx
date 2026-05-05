@@ -11,8 +11,9 @@ import { useToast } from './components/ToastContext';
 // Services
 import { saveReceipt, getHistory, generateNextReceiptNumber, saveCompanySettings, getCompanySettings, getSavedClients, getSavedProducts, deleteReceipt, saveDirectoryHandle, getDirectoryHandle } from './services/storageService';
 import { improveDescription } from './services/geminiService';
-import { getTranslation, formatMoney } from './services/translationService';
+import { getTranslation, formatMoney, CURRENCIES, LANGUAGES } from './services/translationService';
 import { supabase } from './services/supabaseClient';
+import validators from './utils/validators';
 import { connectToPrinter, printTicket } from './services/printerService';
 import { syncService } from './services/syncService';
 import { productService } from './services/productService';
@@ -61,6 +62,7 @@ const InitialReceipt: ReceiptData = {
   total: 0,
   stampText: 'PAGO',
   signatureData: '',
+  documentTheme: 'color',
   createdAt: Date.now(),
 };
 
@@ -213,15 +215,13 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const isGuestAccess = params.get('guest') === 'true';
     const action = params.get('action');
     const view = params.get('view');
 
-    if (isGuestAccess) {
-        setIsGuest(true);
-        setCurrentView('app');
-        return; // Skip other auth checks
-    }
+    // SEGURANÇA: Guest access removido - apenas em modo DEV com validação
+    // Acesso guest requer token assinado do backend (não implementado)
+    // const isGuestAccess = __DEV__ && params.get('guest') === 'true' && validateGuestToken(params.get('token'));
+    // if (isGuestAccess) { ... }
 
     if (action === 'delete_account') {
         setCurrentView('deleteAccount');
@@ -320,7 +320,8 @@ const App: React.FC = () => {
         }));
       }
     } catch (e) {
-      console.warn("Perfil não encontrado no Supabase, usando definições locais.");
+      // Log seguro - não expor detalhes do servidor
+      if (import.meta.env.DEV) console.warn("Perfil não encontrado no Supabase, usando definições locais.");
     }
   };
 
@@ -331,13 +332,34 @@ const App: React.FC = () => {
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCompanySettings(prev => ({ ...prev, logo: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // CRÍTICA #5: File Upload RCE - Validar tipo/tamanho
+    const validation = validators.imageFile(file);
+    if (!validation.valid) {
+      notify(validation.error || "Arquivo inválido", "error");
+      return;
     }
+
+    if (!file.type.startsWith('image/')) {
+      notify("Apenas imagens permitidas", "error");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      if (result.length > 3 * 1024 * 1024) {
+        notify("Arquivo convertido muito grande", "error");
+        return;
+      }
+      setCompanySettings(prev => ({ ...prev, logo: result }));
+      notify("Logo carregado com sucesso!", "success");
+    };
+    reader.onerror = () => {
+      notify("Erro ao ler arquivo", "error");
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveSettings = async () => {
@@ -348,7 +370,8 @@ const App: React.FC = () => {
       notify("Definições da empresa guardadas com sucesso!", "success");
       setShowSettingsModal(false);
     } catch (err: any) {
-      notify("Erro ao guardar definições: " + err.message, "error");
+      // SEGURANÇA: Mensagem genérica - não expor detalhes do erro
+      notify("Erro ao guardar definições. Tente novamente.", "error");
     } finally {
       setIsSavingSettings(false);
     }
@@ -356,14 +379,29 @@ const App: React.FC = () => {
 
   const handleStampUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCompanySettings(prev => ({ ...prev, customStamp: reader.result as string }));
-        notify("Carimbo personalizado carregado!", "success");
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // SEGURANÇA: Validar tipo e tamanho do arquivo
+    const validation = validators.imageFile(file);
+    if (!validation.valid) {
+      notify(validation.error || "Arquivo inválido", "error");
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      if (result.length > 3 * 1024 * 1024) {
+        notify("Arquivo convertido muito grande", "error");
+        return;
+      }
+      setCompanySettings(prev => ({ ...prev, customStamp: result }));
+      notify("Carimbo personalizado carregado!", "success");
+    };
+    reader.onerror = () => {
+      notify("Erro ao ler arquivo", "error");
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSettingsSignatureStartDrawing = (e: any) => {
@@ -460,7 +498,12 @@ const App: React.FC = () => {
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      const fileName = `${formData.number}_${formData.clientName.replace(/\s+/g, '_') || 'documento'}.pdf`;
+      // SEGURANÇA: Sanitizar nome do arquivo para prevenir XSS
+      const sanitizedNumber = validators.fileName(formData.number);
+      const sanitizedClientName = validators.fileName(formData.clientName);
+      const fileName = sanitizedClientName 
+        ? `${sanitizedNumber}_${sanitizedClientName}.pdf`
+        : `${sanitizedNumber}_documento.pdf`;
       return { blob: pdf.output('blob'), fileName, base64: pdf.output('datauristring').split(',')[1] };
     } catch (e) {
       console.error(e);
@@ -524,7 +567,8 @@ const App: React.FC = () => {
       }
       if (session?.user?.id) handleSave(true); 
     } catch (error: any) {
-      notify(`Erro na geração: ${error.message}`, 'error');
+      // SEGURANÇA: Mensagem genérica
+      notify("Erro na geração do PDF. Tente novamente.", 'error');
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -550,13 +594,21 @@ const App: React.FC = () => {
             });
             notify("Partilha concluída!", "success");
         } else {
+            // SEGURANÇA: Validar telefone antes de abrir WhatsApp
+            if (!formData.clientContact || !validators.phone(formData.clientContact)) {
+                notify("Número de telefone inválido. Verifique o contato do cliente.", "error");
+                setIsSharing(false);
+                return;
+            }
             const text = `Olá, segue o documento ${formData.number}. Pode descarregar no aplicativo.`;
-            window.open(`https://wa.me/${formData.clientContact.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
+            const cleanPhone = formData.clientContact.replace(/\D/g, '');
+            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, '_blank');
             notify("Aviso: Seu navegador não suporta partilha de ficheiros direta. Abrindo chat...", "info");
         }
     } catch (e: any) {
         if (e.name !== 'AbortError') {
-            notify(`Erro ao partilhar: ${e.message}`, "error");
+            // SEGURANÇA: Mensagem genérica
+        notify("Erro ao partilhar documento.", "error");
         }
     } finally {
         setIsSharing(false);
@@ -593,7 +645,8 @@ const App: React.FC = () => {
             notify("Impressão enviada!", "success");
         }
     } catch (e: any) {
-        notify(`Erro na impressão: ${e.message}`, "error");
+        // SEGURANÇA: Mensagem genérica
+        notify("Erro na impressão. Verifique a conexão Bluetooth.", "error");
         setPrinter(null);
     } finally {
         setIsPrinting(false);
@@ -673,28 +726,60 @@ const App: React.FC = () => {
   };
 
   const handleLogin = async (email: string, pass: string) => {
+    // CRÍTICA #13: Email Validation
+    if (!email.trim() || !validators.email(email)) {
+      notify("Email inválido", "error");
+      return;
+    }
+
+    if (!pass || pass.length < 6) {
+      notify("Senha deve ter pelo menos 6 caracteres", "error");
+      return;
+    }
+
     setAuthLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+      const { error } = await supabase.auth.signInWithPassword({ 
+        email: email.trim(),
+        password: pass 
+      });
       if (error) throw error;
       notify("Login bem-sucedido!", "success");
     } catch (e: any) {
-      notify("Erro ao entrar: " + (e.message || "Credenciais inválidas"), "error");
+      // CRÍTICA #7: Mensagens de erro genéricas
+      if (e.message?.includes('Invalid login credentials')) {
+        notify("Email ou senha incorretos", "error");
+      } else {
+        notify("Erro ao fazer login. Tente novamente.", "error");
+      }
     } finally {
       setAuthLoading(false);
     }
   };
 
   const handleRegister = async (email: string, pass: string, data: any) => {
+    // SEGURANÇA: Validar email antes de enviar
+    if (!email.trim() || !validators.email(email)) {
+      notify("Email inválido", "error");
+      return;
+    }
+
+    // Validar força da senha
+    const passwordValidation = validators.password(pass);
+    if (!passwordValidation.valid) {
+      notify(`Senha fraca. Necessário: ${passwordValidation.errors.join(', ')}`, "error");
+      return;
+    }
+
     setAuthLoading(true);
     try {
       const { data: authData, error } = await supabase.auth.signUp({ 
-        email, 
+        email: email.trim(), 
         password: pass,
         options: {
           data: {
-            full_name: data.name,
-            company_name: data.companyName
+            full_name: data?.name?.trim() || '',
+            company_name: data?.companyName?.trim() || ''
           }
         }
       });
@@ -703,17 +788,22 @@ const App: React.FC = () => {
       if (authData.user) {
         await supabase.from('profiles').insert({
           id: authData.user.id,
-          company_name: data.companyName,
-          address: data.address,
-          currency: data.currency,
-          language: data.language,
-          logo: data.logo
+          company_name: data?.companyName?.trim() || '',
+          address: data?.address?.trim() || '',
+          currency: data?.currency || 'MZN',
+          language: data?.language || 'pt',
+          logo: data?.logo || null
         });
       }
       
-      notify("Conta criada! Verifique seu email.", "success");
+      notify("Conta criada! Verifique seu email para confirmar.", "success");
     } catch (e: any) {
-      notify("Erro no registo: " + e.message, "error");
+      // SEGURANÇA: Mensagens genéricas - não expor detalhes do servidor
+      if (e.message?.includes('already registered')) {
+        notify("Este email já está registado", "error");
+      } else {
+        notify("Erro no registo. Tente novamente mais tarde.", "error");
+      }
     } finally {
       setAuthLoading(false);
     }
@@ -931,17 +1021,13 @@ const App: React.FC = () => {
                         <div>
                             <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">Moeda</label>
                             <select name="currency" value={companySettings.currency} onChange={handleUpdateSettings} className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm dark:text-white transition-colors">
-                                <option value="MZN">MZN</option>
-                                <option value="USD">USD</option>
-                                <option value="EUR">EUR</option>
-                                <option value="ZAR">ZAR</option>
+                                {CURRENCIES.map(c => <option key={`${c.code}-${c.flag}`} value={c.code}>{c.flag} {c.name} ({c.code})</option>)}
                             </select>
                         </div>
                          <div>
                             <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">Idioma</label>
                             <select name="language" value={companySettings.language} onChange={handleUpdateSettings} className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm dark:text-white transition-colors">
-                                <option value="pt">Português</option>
-                                <option value="en">English</option>
+                                {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.flag} {l.name}</option>)}
                             </select>
                         </div>
                       </div>

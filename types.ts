@@ -1,4 +1,3 @@
-
 export type DocumentType = 'RECEIPT' | 'INVOICE' | 'QUOTE' | 'INVOICE_RECEIPT';
 
 export interface LineItem {
@@ -48,6 +47,7 @@ export interface ReceiptData {
   stampText?: string;
   signatureData?: string; 
   status?: 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE';
+  documentTheme?: 'color' | 'bw'; // NOVO: tema do documento
   
   // Meta
   createdAt: number;
@@ -165,3 +165,4 @@ export interface BluetoothPrinter {
     getPrimaryServices: (uuid?: string) => Promise<any[]>;
   };
 }
+
