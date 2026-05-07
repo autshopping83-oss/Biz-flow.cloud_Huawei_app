@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Comment, CompanySettings } from '../types';
-import { getComments, saveComment } from '../services/storageService';
+import { getComments, saveComment, deleteComment } from '../services/storageService';
+import { useToast } from './ToastContext';
 
 interface Props {
   currentUser: CompanySettings;
@@ -11,6 +12,7 @@ interface Props {
 export const CommunityFeed: React.FC<Props> = ({ currentUser, t }) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newContent, setNewContent] = useState('');
+  const { notify } = useToast();
 
   useEffect(() => {
     setComments(getComments());
@@ -44,6 +46,19 @@ export const CommunityFeed: React.FC<Props> = ({ currentUser, t }) => {
     if (hours < 24) return `${hours}h atrás`;
     const days = Math.floor(hours / 24);
     return `${days}d atrás`;
+  };
+
+  const handleDeleteComment = (commentId: string, authorName: string) => {
+    if (currentUser.name !== authorName) {
+      notify('Só pode eliminar seus próprios comentários.', 'error');
+      return;
+    }
+    
+    if (confirm('Tem a certeza que deseja eliminar este comentário?')) {
+      const updated = deleteComment(commentId);
+      setComments(updated);
+      notify('Comentário eliminado com sucesso!', 'success');
+    }
   };
 
   return (
@@ -130,6 +145,14 @@ export const CommunityFeed: React.FC<Props> = ({ currentUser, t }) => {
                       <button className="flex items-center gap-1.5 hover:text-blue-600 transition">
                         <i className="fa-regular fa-comment"></i> Responder
                       </button>
+                      {currentUser.name === comment.userName && (
+                        <button 
+                          onClick={() => handleDeleteComment(comment.id, comment.userName)}
+                          className="flex items-center gap-1.5 hover:text-red-600 transition ml-auto text-red-500 hover:text-red-700"
+                        >
+                          <i className="fa-solid fa-trash-alt"></i> Eliminar
+                        </button>
+                      )}
                    </div>
                 </div>
              </div>

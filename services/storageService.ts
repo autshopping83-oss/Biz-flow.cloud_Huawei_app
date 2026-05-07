@@ -238,6 +238,13 @@ export const saveComment = (comment: Comment): Comment[] => {
   return updated;
 };
 
+export const deleteComment = (commentId: string): Comment[] => {
+  const current = getComments();
+  const updated = current.filter(c => c.id !== commentId);
+  localStorage.setItem(COMMENTS_KEY, JSON.stringify(updated));
+  return updated;
+};
+
 export const getTransactions = async (userId: string): Promise<Transaction[]> => {
   if (!userId) return [];
   return await db.transactions.where('userId').equals(userId).reverse().sortBy('date');

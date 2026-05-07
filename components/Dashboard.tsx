@@ -5,6 +5,8 @@ import { formatMoney } from '../services/translationService';
 import { CommunityFeed } from './CommunityFeed';
 import { FinanceManager } from './FinanceManager';
 import { ProductCatalog } from './ProductCatalog';
+import { AdminDashboard } from './AdminDashboard';
+import { UserManagement } from './UserManagement';
 import { Logo } from './Logo';
 
 interface DashboardProps {
@@ -21,17 +23,20 @@ interface DashboardProps {
   onDeleteDocument?: (id: string) => void;
   onInstallApp?: () => void;
   showInstallButton?: boolean;
+  orgId?: string;
 }
 
 type DashTab = 'OVERVIEW' | 'COMMUNITY' | 'HISTORY' | 'FINANCE' | 'CATALOG';
 
 export const Dashboard: React.FC<DashboardProps> = ({
-  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, onDeleteDocument, onInstallApp, showInstallButton
+  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, onDeleteDocument, onInstallApp, showInstallButton, orgId
 }) => {
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<DashTab>('OVERVIEW');
   const [showCatalog, setShowCatalog] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [showUserManagement, setShowUserManagement] = useState(false);
   const recentHistory = history.slice(0, 5);
 
   const handleNav = (tab: DashTab) => {
@@ -126,6 +131,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <button onClick={handleOpenEbooks} className="w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border border-transparent text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
                  <i className="fa-solid fa-layer-group w-5 text-center text-indigo-500"></i> Vender E-books
             </button>
+
+            {companySettings.isAdmin && (
+              <>
+                <button onClick={() => { setShowAdmin(true); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border border-transparent text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                  <i className="fa-solid fa-lock w-5 text-center text-red-500"></i> Painel Admin
+                </button>
+                <button onClick={() => { setShowUserManagement(true); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border border-transparent text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                  <i className="fa-solid fa-users-gear w-5 text-center text-emerald-500"></i> Sub-usuários
+                </button>
+              </>
+            )}
             
             <div className="border-t border-slate-100 dark:border-slate-800 my-4 mx-2"></div>
 
@@ -352,6 +368,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
           t={t}
           fMoney={formatMoney}
           onClose={() => setShowCatalog(false)}
+        />
+      )}
+
+      {/* Admin Dashboard Modal */}
+      {showAdmin && (
+        <AdminDashboard
+          onClose={() => setShowAdmin(false)}
+        />
+      )}
+
+      {/* User Management Modal */}
+      {showUserManagement && (
+        <UserManagement
+          userId={userId}
+          orgId={orgId || userId}
+          isAdmin={companySettings.isAdmin || false}
+          onClose={() => setShowUserManagement(false)}
+          currentUserEmail={companySettings.contact}
         />
       )}
       </main>
