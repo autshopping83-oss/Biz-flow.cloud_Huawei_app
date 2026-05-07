@@ -12,11 +12,7 @@ import { useToast } from './components/ToastContext';
 import { saveReceipt, getHistory, generateNextReceiptNumber, saveCompanySettings, getCompanySettings, getSavedClients, getSavedProducts, deleteReceipt, saveDirectoryHandle, getDirectoryHandle } from './services/storageService';
 import { improveDescription } from './services/geminiService';
 import { getTranslation, formatMoney, CURRENCIES, LANGUAGES } from './services/translationService';
-import { supabase } from './services/supabaseClient';
-import validators from './src/utils/validators';
-import { connectToPrinter, printTicket } from './services/printerService';
-import { syncService } from './services/syncService';
-import { productService } from './services/productService';
+import { orgService } from './services/orgService';
 import { BleClient } from '@capacitor-community/bluetooth-le';
 
 // --- LAZY COMPONENTS (Code Splitting) ---
