@@ -14,6 +14,11 @@ import { improveDescription } from './services/geminiService';
 import { getTranslation, formatMoney, CURRENCIES, LANGUAGES } from './services/translationService';
 import { orgService } from './services/orgService';
 import { BleClient } from '@capacitor-community/bluetooth-le';
+import { supabase } from './services/supabaseClient';
+import { syncService } from './services/syncService';
+import { productService } from './services/productService';
+import { connectToPrinter, printTicket } from './services/printerService';
+import { validators } from './src/utils/validators';
 
 // --- LAZY COMPONENTS (Code Splitting) ---
 const DocumentPreview = lazy(() => import('./components/ReceiptPreview')); 
@@ -402,7 +407,7 @@ const App: React.FC = () => {
 
   const handleSettingsSignatureStartDrawing = (e: any) => {
     const ctx = settingsSignatureCanvasRef.current?.getContext('2d');
-    if (!ctx) return;
+    if (!ctx || !settingsSignatureCanvasRef.current) return;
     isDrawing.current = true;
     const { x, y } = getCoords(e, settingsSignatureCanvasRef.current);
     ctx.beginPath();
@@ -412,7 +417,7 @@ const App: React.FC = () => {
   const handleSettingsSignatureDraw = (e: any) => {
     if (!isDrawing.current) return;
     const ctx = settingsSignatureCanvasRef.current?.getContext('2d');
-    if (!ctx) return;
+    if (!ctx || !settingsSignatureCanvasRef.current) return;
     const { x, y } = getCoords(e, settingsSignatureCanvasRef.current);
     ctx.lineTo(x, y);
     ctx.stroke();
@@ -693,7 +698,7 @@ const App: React.FC = () => {
   };
 
   const handleDuplicateDocument = (doc: ReceiptData) => {
-    const newDoc = { ...doc };
+    const newDoc = { ...doc } as any;
     delete newDoc.pdfUrl;
     delete newDoc.synced;
     setFormData({

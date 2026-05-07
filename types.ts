@@ -51,6 +51,8 @@ export interface ReceiptData {
   
   // Meta
   createdAt: number;
+  pdfUrl?: string; // URL do PDF gerado
+  synced?: boolean; // Status de sincronização
 }
 
 export type SubscriptionPlan = 'FREE' | 'PRO' | 'ENTERPRISE';
