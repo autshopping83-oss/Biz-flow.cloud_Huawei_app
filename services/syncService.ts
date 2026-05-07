@@ -179,6 +179,24 @@ class SyncService {
     }
   }
 
+  /**
+   * Obter tamanho da fila de sincronização
+   */
+  async getQueueSize(): Promise<number> {
+    try {
+      return await db.syncQueue.count();
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Processar a fila de sincronização manualmente
+   */
+  async processQueue(): Promise<void> {
+    return this.sync();
+  }
+
   // Initial pull from Supabase to local DB
   async pullFromSupabase(userId: string) {
     if (!userId || !navigator.onLine) return;

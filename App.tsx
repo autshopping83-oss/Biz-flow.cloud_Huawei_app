@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -29,6 +30,8 @@ const EditorForm = lazy(() => import('./components/EditorForm').then(module => (
 const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(module => ({ default: module.AdminDashboard }))); 
 const DeleteAccount = lazy(() => import('./components/DeleteAccount').then(module => ({ default: module.DeleteAccount }))); 
 const HistoryPage = lazy(() => import('./components/HistoryPage').then(module => ({ default: module.HistoryPage })));
+const ApiDocs = lazy(() => import('./components/ApiDocs').then(module => ({ default: module.ApiDocs })));
+const ApiDashboard = lazy(() => import('./components/ApiDashboard').then(module => ({ default: module.ApiDashboard })));
 
 declare global {
   interface Window {
@@ -274,10 +277,19 @@ const App: React.FC = () => {
       setSyncing(isSyncing);
     });
 
+    const handleNavigate = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail === 'apiDashboard') {
+        setCurrentView('apiDashboard');
+      }
+    };
+    window.addEventListener('navigate', handleNavigate);
+
     return () => {
       subscription.unsubscribe();
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('navigate', handleNavigate);
     };
   }, [isGuest]);
 
@@ -884,6 +896,18 @@ const App: React.FC = () => {
               currency={companySettings.currency}
               lang={companySettings.language}
           />
+      )}
+
+      {currentView === 'apiDocs' && (
+        <ApiDocs onBack={() => setCurrentView('login')} initialTab="general" />
+      )}
+
+      {currentView === 'apiDashboard' && (
+        <ApiDashboard
+          userId={session?.user?.id}
+          onBack={() => setCurrentView('home')}
+          onOpenDocs={() => setCurrentView('apiDocs')}
+        />
       )}
       
       {(currentView === 'app' || isGuest) && (

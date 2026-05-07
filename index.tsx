@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ToastProvider } from './components/ToastContext';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { ApiDocs } from './components/ApiDocs';
 
 // --- GLOBAL TYPES ---
 declare global {

@@ -132,6 +132,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                  <i className="fa-solid fa-layer-group w-5 text-center text-indigo-500"></i> Vender E-books
             </button>
 
+            <button onClick={() => { setIsMenuOpen(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'apiDashboard' })); }} className="w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border border-transparent text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20">
+                 <i className="fa-solid fa-code w-5 text-center text-purple-500"></i> API Dashboard
+            </button>
+
             {companySettings.isAdmin && (
               <>
                 <button onClick={() => { setShowAdmin(true); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border border-transparent text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
