@@ -6,7 +6,7 @@ A Biz-Flow utiliza as seguintes variáveis de ambiente:
 
 | Nome | Tipo | Descrição | Exemplo |
 |------|------|-----------|---------|
-| `VITE_SUPABASE_URL` | **Público** | URL do seu projeto Supabase | `https://ilukexelmihfdezbgcrp.supabase.co` |
+| `VITE_SUPABASE_URL` | **Público** | URL do seu projeto Supabase | `https://seu-projeto.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | **Público** | Chave Anônima do Supabase | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
 | `VITE_GEMINI_API_KEY` | **Privado** | Chave da API do Google Gemini | `AIzaSy...` |
 | `VITE_WALLET_ID` | **Público** | ID da Carteira de Pagamentos | `1764016232895x517043067934736400` |
@@ -59,7 +59,7 @@ Obtenha com seu provedor de pagamentos (Mozpayment, etc):
 
 ```
 Nome: VITE_SUPABASE_URL
-Valor: https://ilukexelmihfdezbgcrp.supabase.co
+Valor: https://seu-projeto.supabase.co
 ✓ Production
 ✓ Preview
 ✓ Development
