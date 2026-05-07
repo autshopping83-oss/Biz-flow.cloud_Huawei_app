@@ -5,6 +5,15 @@ import App from './App';
 import { ToastProvider } from './components/ToastContext';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 
+// --- GLOBAL TYPES ---
+declare global {
+  interface Window {
+    Capacitor?: {
+      isNativePlatform: () => boolean;
+    };
+  }
+}
+
 // --- INITIALIZATION ---
 
 const rootElement = document.getElementById('root');
@@ -13,7 +22,8 @@ if (!rootElement) {
 }
 
 // --- SERVICE WORKER REGISTRATION (PWA) ---
-if ('serviceWorker' in navigator) {
+// Only register service worker in browser environments, not in native Android (Capacitor)
+if ('serviceWorker' in navigator && !window.Capacitor?.isNativePlatform()) {
   window.addEventListener('load', () => {
     // IMPORTANTE: Usar './service-worker.js' (relativo) em vez de '/service-worker.js' (absoluto)
     // para evitar erros de origem em ambientes de preview como AI Studio.

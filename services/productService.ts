@@ -1,6 +1,7 @@
-import { db, SyncQueueItem } from './db';
+import { db } from './db';
 import { Product } from '../types';
 import { supabase } from './supabaseClient';
+import { syncService } from './syncService';
 
 class ProductService {
   /**
@@ -72,10 +73,8 @@ class ProductService {
 
     await db.catalog.add(product);
 
-    // Queue for sync if online
-    if (navigator.onLine) {
-      await this.queueSync('products', 'INSERT', product);
-    }
+    // Queue for sync via unified syncService (works offline too)
+    await syncService.addToQueue('catalog', 'INSERT', product);
 
     return product;
   }
@@ -99,7 +98,7 @@ class ProductService {
     };
 
     await db.catalog.put(updated);
-    await this.queueSync('products', 'UPDATE', updated);
+    await syncService.addToQueue('catalog', 'UPDATE', updated);
 
     return updated;
   }
@@ -114,7 +113,7 @@ class ProductService {
     }
 
     await db.catalog.delete(id);
-    await this.queueSync('products', 'DELETE', { id, userId: product.userId });
+    await syncService.addToQueue('catalog', 'DELETE', { id, userId: product.userId });
   }
 
   /**
@@ -144,9 +143,9 @@ class ProductService {
 
     await db.catalog.bulkAdd(productsToAdd);
 
-    // Queue bulk sync
+    // Queue bulk sync via unified syncService
     for (const product of productsToAdd) {
-      await this.queueSync('products', 'INSERT', product);
+      await syncService.addToQueue('catalog', 'INSERT', product);
     }
 
     return productsToAdd;
@@ -237,22 +236,6 @@ class ProductService {
       headers.join(','),
       ...rows.map(r => r.join(',')),
     ].join('\n');
-  }
-
-  /**
-   * Queue product sync operation
-   */
-  private async queueSync(table: string, action: 'INSERT' | 'UPDATE' | 'DELETE', data: any): Promise<void> {
-    try {
-      await db.syncQueue.add({
-        table,
-        action,
-        data,
-        timestamp: Date.now(),
-      });
-    } catch (error) {
-      console.error('Error queuing sync:', error);
-    }
   }
 }
 

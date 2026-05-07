@@ -5,6 +5,8 @@ import { supabase } from './supabaseClient';
 class SyncService {
   private isSyncing = false;
   private onStatusChange: ((syncing: boolean) => void) | null = null;
+  private maxRetries = 5;
+  private retryDelay = 1000; // 1 second initial delay
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -44,11 +46,16 @@ class SyncService {
       }
 
       for (const item of queue) {
-        const success = await this.processItem(item);
+        const success = await this.processItemWithRetry(item);
         if (success) {
           await db.syncQueue.delete(item.id!);
         } else {
-          break;
+          // If item has exceeded max retries, skip it to avoid blocking the queue
+          if (item.retries && item.retries >= this.maxRetries) {
+            console.warn(`Sync item ${item.id} exceeded max retries, skipping`);
+            await db.syncQueue.delete(item.id!);
+          }
+          break; // Stop processing on failure to maintain order
         }
       }
     } catch (error) {
@@ -56,6 +63,25 @@ class SyncService {
     } finally {
       this.isSyncing = false;
       this.onStatusChange?.(false);
+    }
+  }
+
+  private async processItemWithRetry(item: SyncQueueItem, attempt = 0): Promise<boolean> {
+    try {
+      return await this.processItem(item);
+    } catch (error) {
+      if (attempt < this.maxRetries) {
+        const delay = this.retryDelay * Math.pow(2, attempt); // Exponential backoff
+        console.warn(`Sync retry ${attempt + 1}/${this.maxRetries} for item ${item.id} after ${delay}ms`);
+        
+        // Update retry count in the queue
+        await db.syncQueue.update(item.id!, { retries: (item.retries || 0) + 1 });
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.processItemWithRetry(item, attempt + 1);
+      }
+      console.error(`Sync failed after ${this.maxRetries} retries for item ${item.id}:`, error);
+      return false;
     }
   }
 

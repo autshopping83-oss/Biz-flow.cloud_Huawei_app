@@ -10,6 +10,26 @@ const TRANSACTIONS_KEY = 'bizflow_transactions_v1';
 const CLIENTS_KEY = 'bizflow_clients_db';
 const PRODUCTS_KEY = 'bizflow_products_db';
 
+// Migrate comments from localStorage to Dexie on first load
+const migrateCommentsToDexie = async () => {
+  try {
+    const stored = localStorage.getItem(COMMENTS_KEY);
+    if (stored) {
+      const comments: Comment[] = JSON.parse(stored);
+      if (comments.length > 0) {
+        const existingCount = await db.comments.count();
+        if (existingCount === 0) {
+          await db.comments.bulkAdd(comments);
+        }
+        localStorage.removeItem(COMMENTS_KEY);
+      }
+    }
+  } catch (e) {
+    console.warn('Comments migration error:', e);
+  }
+};
+migrateCommentsToDexie();
+
 // --- GESTÃO DE DIRETÓRIOS LOCAIS (File System Access API) ---
 
 export const saveDirectoryHandle = async (handle: any) => {
@@ -226,23 +246,42 @@ export const getCompanySettings = async (userId: string): Promise<CompanySetting
   return stored ? stored as any : null;
 };
 
-export const getComments = (): Comment[] => {
-  const stored = localStorage.getItem(COMMENTS_KEY);
-  return stored ? JSON.parse(stored) : [];
+export const getComments = async (): Promise<Comment[]> => {
+  try {
+    return await db.comments.orderBy('timestamp').reverse().toArray();
+  } catch (e) {
+    // Fallback to localStorage if Dexie fails
+    const stored = localStorage.getItem(COMMENTS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  }
 };
 
-export const saveComment = (comment: Comment): Comment[] => {
-  const current = getComments();
-  const updated = [comment, ...current];
-  localStorage.setItem(COMMENTS_KEY, JSON.stringify(updated));
-  return updated;
+export const saveComment = async (comment: Comment): Promise<Comment[]> => {
+  try {
+    await db.comments.add(comment);
+    return await getComments();
+  } catch (e) {
+    // Fallback to localStorage
+    const current = localStorage.getItem(COMMENTS_KEY);
+    const parsed = current ? JSON.parse(current) : [];
+    const updated = [comment, ...parsed];
+    localStorage.setItem(COMMENTS_KEY, JSON.stringify(updated));
+    return updated;
+  }
 };
 
-export const deleteComment = (commentId: string): Comment[] => {
-  const current = getComments();
-  const updated = current.filter(c => c.id !== commentId);
-  localStorage.setItem(COMMENTS_KEY, JSON.stringify(updated));
-  return updated;
+export const deleteComment = async (commentId: string): Promise<Comment[]> => {
+  try {
+    await db.comments.delete(commentId);
+    return await getComments();
+  } catch (e) {
+    // Fallback to localStorage
+    const current = localStorage.getItem(COMMENTS_KEY);
+    const parsed = current ? JSON.parse(current) : [];
+    const updated = parsed.filter((c: Comment) => c.id !== commentId);
+    localStorage.setItem(COMMENTS_KEY, JSON.stringify(updated));
+    return updated;
+  }
 };
 
 export const getTransactions = async (userId: string): Promise<Transaction[]> => {

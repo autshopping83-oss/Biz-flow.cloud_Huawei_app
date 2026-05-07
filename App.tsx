@@ -19,6 +19,7 @@ import { syncService } from './services/syncService';
 import { productService } from './services/productService';
 import { connectToPrinter, printTicket } from './services/printerService';
 import { validators } from './src/utils/validators';
+import { N8nWebhookTester } from './components/N8nWebhookTester';
 
 // --- LAZY COMPONENTS (Code Splitting) ---
 const DocumentPreview = lazy(() => import('./components/ReceiptPreview')); 
@@ -1078,6 +1079,18 @@ const App: React.FC = () => {
                            <button onClick={clearSettingsSignature} className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-white font-bold text-xs py-2 px-4 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">Limpar</button>
                            <button onClick={saveSettingsSignature} className="bg-purple-600 text-white font-bold text-xs py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">Guardar Assinatura</button>
                          </div>
+                      </div>
+
+                      {/* N8N Webhook Integration */}
+                      <div className="border-t border-slate-200 dark:border-slate-800 pt-6">
+                         <h4 className="text-md font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
+                            <i className="fa-solid fa-plug text-green-500"></i>
+                            Integrações Externas
+                         </h4>
+                         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                           Conecte o BizFlow Cloud a serviços externos via n8n: Email, WhatsApp, Chatbot, CRM e mais.
+                         </p>
+                         <N8nWebhookTester userId={session?.user?.id} />
                       </div>
                  </div>
                  <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t dark:border-slate-800 flex gap-4 transition-colors">
