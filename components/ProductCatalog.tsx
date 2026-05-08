@@ -21,7 +21,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [categories, setCategories] = useState<string[]>([]);
-  const { showToast } = useToast();
+  const { notify } = useToast();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -43,7 +43,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       setProducts(loadedProducts);
     } catch (error) {
       console.error('Error loading products:', error);
-      showToast('Erro ao carregar produtos', 'error');
+      notify('Erro ao carregar produtos', 'error');
     } finally {
       setLoading(false);
     }
@@ -61,11 +61,11 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      showToast('Nome do produto é obrigatório', 'error');
+      notify('Nome do produto é obrigatório', 'error');
       return;
     }
     if (formData.price < 0) {
-      showToast('Preço deve ser um valor positivo', 'error');
+      notify('Preço deve ser um valor positivo', 'error');
       return;
     }
 
@@ -79,7 +79,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
           category: formData.category,
         });
         setProducts(products.map(p => (p.id === updated.id ? updated : p)));
-        showToast(`Produto "${updated.name}" atualizado com sucesso`, 'success');
+        notify(`Produto "${updated.name}" atualizado com sucesso`, 'success');
       } else {
         // Create new product
         const newProduct = await productService.createProduct(
@@ -89,7 +89,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
           formData.category
         );
         setProducts([...products, newProduct]);
-        showToast(`Produto "${newProduct.name}" criado com sucesso`, 'success');
+        notify(`Produto "${newProduct.name}" criado com sucesso`, 'success');
       }
 
       // Reset form and reload categories
@@ -99,7 +99,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       await loadCategories();
     } catch (error) {
       console.error('Error saving product:', error);
-      showToast('Erro ao salvar produto', 'error');
+      notify('Erro ao salvar produto', 'error');
     } finally {
       setIsCreating(false);
     }
@@ -121,10 +121,10 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
     try {
       await productService.deleteProduct(productId);
       setProducts(products.filter(p => p.id !== productId));
-      showToast('Produto eliminado com sucesso', 'success');
+      notify('Produto eliminado com sucesso', 'success');
     } catch (error) {
       console.error('Error deleting product:', error);
-      showToast('Erro ao eliminar produto', 'error');
+      notify('Erro ao eliminar produto', 'error');
     }
   };
 
@@ -144,10 +144,10 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
       a.download = `produtos_${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      showToast('Produtos exportados com sucesso', 'success');
+      notify('Produtos exportados com sucesso', 'success');
     } catch (error) {
       console.error('Error exporting products:', error);
-      showToast('Erro ao exportar produtos', 'error');
+      notify('Erro ao exportar produtos', 'error');
     }
   };
 
