@@ -4,6 +4,7 @@ import { ReceiptData, LineItem, DocumentType, SavedClient, SavedProduct, Product
 import { ProductSearch } from './ProductSearch';
 import { productService } from '../services/productService';
 import { useToast } from './ToastContext';
+import { n8nWebhookService } from '../services/n8nWebhookService';
 
 interface EditorFormProps {
   formData: ReceiptData;
@@ -76,7 +77,7 @@ export const EditorForm: React.FC<EditorFormProps> = ({
   const [pendingItem, setPendingItem] = React.useState<Partial<LineItem> | null>(null);
   const [isSavingProduct, setIsSavingProduct] = React.useState(false);
   const [selectedCatalogProduct, setSelectedCatalogProduct] = React.useState<Product | null>(null);
-  const { showToast } = useToast();
+  const { notify } = useToast();
 
   const handleProductSelect = (product: Product) => {
     // When a product is selected from catalog, set its details in the new item
@@ -129,13 +130,13 @@ export const EditorForm: React.FC<EditorFormProps> = ({
         ''  // No category for now
       );
 
-      showToast(`Produto "${newProduct.name}" salvo no catálogo`, 'success');
+      notify(`Produto "${newProduct.name}" salvo no catálogo`, 'success');
       setShowSaveProductModal(false);
       setPendingItem(null);
       onAddItem();
     } catch (error) {
       console.error('Error saving product:', error);
-      showToast('Erro ao salvar produto', 'error');
+      notify('Erro ao salvar produto', 'error');
     } finally {
       setIsSavingProduct(false);
     }
@@ -414,6 +415,53 @@ export const EditorForm: React.FC<EditorFormProps> = ({
                <button onClick={onSign} className={`w-full mt-auto h-[42px] rounded-lg text-sm font-bold border transition-all flex items-center justify-center gap-2 shadow-sm ${formData.signatureData ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
                    <i className="fa-solid fa-pen-nib"></i> {formData.signatureData ? 'Assinado' : 'Assinar'}
                </button>
+           </div>
+       </Section>
+
+       {/* Enviar Documento via Webhook */}
+       <Section title="Enviar Documento" icon="fa-paper-plane">
+           <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+             Envie este documento diretamente para o cliente via Email ou WhatsApp usando integração n8n.
+           </p>
+           <div className="grid grid-cols-2 gap-3">
+             <button
+               onClick={async () => {
+                 if (!formData.clientContact) {
+                   notify("Adicione um contacto do cliente primeiro", "error");
+                   return;
+                 }
+                 notify("Enviando via WhatsApp...", "info");
+                 const result = await n8nWebhookService.shareDocument(formData, 'whatsapp', formData.clientContact, userId);
+                 if (result.success) {
+                   notify("Documento enviado via WhatsApp com sucesso!", "success");
+                 } else {
+                   notify("Erro ao enviar. Verifique a integração n8n.", "error");
+                 }
+               }}
+               className="bg-[#25D366] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#20bd5a] transition-all active:scale-95 shadow-lg shadow-[#25D366]/20 flex items-center justify-center gap-2"
+             >
+               <i className="fa-brands fa-whatsapp text-lg"></i>
+               WhatsApp
+             </button>
+             <button
+               onClick={async () => {
+                 if (!formData.clientContact) {
+                   notify("Adicione um email do cliente primeiro", "error");
+                   return;
+                 }
+                 notify("Enviando via Email...", "info");
+                 const result = await n8nWebhookService.shareDocument(formData, 'email', formData.clientContact, userId);
+                 if (result.success) {
+                   notify("Documento enviado via Email com sucesso!", "success");
+                 } else {
+                   notify("Erro ao enviar. Verifique a integração n8n.", "error");
+                 }
+               }}
+               className="bg-blue-500 text-white py-3 rounded-xl text-sm font-bold hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+             >
+               <i className="fa-solid fa-envelope text-lg"></i>
+               Email
+             </button>
            </div>
        </Section>
 

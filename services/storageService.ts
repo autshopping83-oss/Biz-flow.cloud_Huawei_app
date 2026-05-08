@@ -3,12 +3,8 @@ import { ReceiptData, CompanySettings, DocumentType, Comment, Transaction, Saved
 import { db } from './db';
 import { syncService } from './syncService';
 
-const STORAGE_KEY = 'bizflow_receipts_v1';
-const SETTINGS_KEY = 'bizflow_settings_v1';
+// Chaves de localStorage para fallback
 const COMMENTS_KEY = 'bizflow_comments_v1';
-const TRANSACTIONS_KEY = 'bizflow_transactions_v1';
-const CLIENTS_KEY = 'bizflow_clients_db';
-const PRODUCTS_KEY = 'bizflow_products_db';
 
 // Migrate comments from localStorage to Dexie on first load
 const migrateCommentsToDexie = async () => {

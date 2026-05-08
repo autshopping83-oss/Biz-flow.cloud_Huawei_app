@@ -1,10 +1,8 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ToastProvider } from './components/ToastContext';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
-import { ApiDocs } from './components/ApiDocs';
 
 // --- GLOBAL TYPES ---
 declare global {
@@ -15,26 +13,31 @@ declare global {
   }
 }
 
-// --- INITIALIZATION ---
+// --- REMOVE SPLASH SCREEN ---
+const removeSplash = () => {
+  const splash = document.getElementById('app-splash');
+  if (splash) {
+    splash.style.opacity = '0';
+    setTimeout(() => splash.remove(), 500);
+  }
+};
 
+// --- INITIALIZATION ---
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
 // --- SERVICE WORKER REGISTRATION (PWA) ---
-// Only register service worker in browser environments, not in native Android (Capacitor)
 if ('serviceWorker' in navigator && !window.Capacitor?.isNativePlatform()) {
   window.addEventListener('load', () => {
-    // IMPORTANTE: Usar './service-worker.js' (relativo) em vez de '/service-worker.js' (absoluto)
-    // para evitar erros de origem em ambientes de preview como AI Studio.
     navigator.serviceWorker
       .register('./service-worker.js')
       .then((registration) => {
-        console.log('SW registered successfully: ', registration.scope);
+        console.log('SW registered: ', registration.scope);
       })
-      .catch((registrationError) => {
-        console.log('SW registration failed: ', registrationError);
+      .catch(() => {
+        // Silencioso - não crítico
       });
   });
 }
@@ -44,7 +47,7 @@ root.render(
   <React.StrictMode>
     <ErrorBoundary>
       <ToastProvider>
-        <App />
+        <App onReady={removeSplash} />
       </ToastProvider>
     </ErrorBoundary>
   </React.StrictMode>

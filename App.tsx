@@ -20,7 +20,7 @@ import { syncService } from './services/syncService';
 import { productService } from './services/productService';
 import { connectToPrinter, printTicket } from './services/printerService';
 import { validators } from './src/utils/validators';
-import { N8nWebhookTester } from './components/N8nWebhookTester';
+import { DocumentShareModal } from './components/DocumentShareModal';
 
 // --- LAZY COMPONENTS (Code Splitting) ---
 const DocumentPreview = lazy(() => import('./components/ReceiptPreview')); 
@@ -75,7 +75,11 @@ const DefaultSettings: CompanySettings = {
   name: '', address: '', contact: '', nuit: '', logo: '', defaultTaxRate: 16, currency: 'MZN', language: 'pt', theme: 'light', plan: 'PRO', isAdmin: false
 };
 
-const App: React.FC = () => {
+interface AppProps {
+  onReady?: () => void;
+}
+
+const App: React.FC<AppProps> = ({ onReady }) => {
   const [currentView, setCurrentView] = useState<any>('loading'); 
   const [isGuest, setIsGuest] = useState(false);
   const [history, setHistory] = useState<ReceiptData[]>([]);
@@ -284,6 +288,9 @@ const App: React.FC = () => {
       }
     };
     window.addEventListener('navigate', handleNavigate);
+
+    // Notificar que o app está pronto (remove splash screen)
+    onReady?.();
 
     return () => {
       subscription.unsubscribe();
@@ -667,17 +674,10 @@ const App: React.FC = () => {
     }
   };
 
-  const openPrintModeModal = () => {
-    setShowPrintModeModal(true);
-  };
+  const [showShareModal, setShowShareModal] = useState(false);
 
-  const handleSelectPrintMode = async (mode: 'a4' | 'thermal') => {
-    setShowPrintModeModal(false);
-    if (mode === 'a4') {
-      await handleGeneratePDF();
-    } else {
-      await handlePrintThermal();
-    }
+  const openShareModal = () => {
+    setShowShareModal(true);
   };
 
   const handleSave = async (silent = false) => {
@@ -930,14 +930,9 @@ const App: React.FC = () => {
                        <span className="hidden sm:inline">WhatsApp</span>
                     </button>
 
-                    <button onClick={openPrintModeModal} disabled={isPrinting || isGeneratingPdf} className="bg-slate-900 dark:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-black shadow-xl shadow-slate-900/10 flex items-center gap-2 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50">
-                       <i className="fa-solid fa-print"></i>
-                       <span className="hidden lg:inline">Finalizar</span>
-                    </button>
-
-                    <button onClick={openPrintModeModal} disabled={isPrinting || isGeneratingPdf} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-black shadow-xl shadow-blue-600/20 flex items-center gap-2 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50">
-                       {(isPrinting || isGeneratingPdf) ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-print"></i>} 
-                       <span className="hidden lg:inline">Finalizar</span>
+                    <button onClick={openShareModal} disabled={isPrinting || isGeneratingPdf} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-black shadow-xl shadow-blue-600/20 flex items-center gap-2 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50">
+                       {(isPrinting || isGeneratingPdf) ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-share-nodes"></i>} 
+                       <span className="hidden lg:inline">Compartilhar</span>
                     </button>
                  </div>
               </div>
@@ -1105,17 +1100,6 @@ const App: React.FC = () => {
                          </div>
                       </div>
 
-                      {/* N8N Webhook Integration */}
-                      <div className="border-t border-slate-200 dark:border-slate-800 pt-6">
-                         <h4 className="text-md font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
-                            <i className="fa-solid fa-plug text-green-500"></i>
-                            Integrações Externas
-                         </h4>
-                         <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                           Conecte o BizFlow Cloud a serviços externos via n8n: Email, WhatsApp, Chatbot, CRM e mais.
-                         </p>
-                         <N8nWebhookTester userId={session?.user?.id} />
-                      </div>
                  </div>
                  <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t dark:border-slate-800 flex gap-4 transition-colors">
                      <button onClick={() => setShowSettingsModal(false)} className="flex-1 bg-white dark:bg-slate-800 border dark:border-slate-700 dark:text-white font-bold py-4 rounded-xl text-xs uppercase tracking-widest transition-colors">Cancelar</button>
@@ -1125,26 +1109,19 @@ const App: React.FC = () => {
          </div>
        )}
 
-      {showPrintModeModal && (
-        <div className="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden">
-            <div className="p-6 border-b dark:border-slate-800">
-              <h2 className="text-xl font-bold dark:text-white">Escolha o formato</h2>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Selecione o formato que deseja gerar: PDF A4 para documento digital ou Talão Térmico para impressão Bluetooth.</p>
-            </div>
-            <div className="p-6 space-y-4">
-              <button onClick={() => handleSelectPrintMode('a4')} className="w-full bg-blue-600 text-white rounded-2xl px-5 py-4 text-left shadow-lg shadow-blue-600/10 hover:bg-blue-700 transition">
-                <div className="font-black text-base">PDF A4</div>
-                <div className="text-sm text-blue-100 mt-1">Documento digital profissional para guardar, enviar por WhatsApp ou email.</div>
-              </button>
-              <button onClick={() => handleSelectPrintMode('thermal')} className="w-full bg-slate-900 text-white rounded-2xl px-5 py-4 text-left shadow-lg shadow-slate-900/10 hover:bg-slate-800 transition">
-                <div className="font-black text-base">Talão Térmico</div>
-                <div className="text-sm text-slate-100 mt-1">Recibo estreito para bobinas 58/80mm, ideal para impressoras Bluetooth.</div>
-              </button>
-              <button onClick={() => setShowPrintModeModal(false)} className="w-full border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancelar</button>
-            </div>
-          </div>
-        </div>
+      {showShareModal && (
+        <DocumentShareModal
+          formData={formData}
+          companySettings={companySettings}
+          userId={session?.user?.id}
+          isGeneratingPdf={isGeneratingPdf}
+          isPrinting={isPrinting}
+          onGeneratePDF={handleGeneratePDF}
+          onPrintThermal={handlePrintThermal}
+          onClose={() => setShowShareModal(false)}
+          t={t}
+          fMoney={fMoney}
+        />
       )}
 
       {showSignatureModal && (
