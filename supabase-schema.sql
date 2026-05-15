@@ -29,6 +29,8 @@ create table if not exists public.profiles (
   theme text default 'light',
   plan text default 'FREE',
   is_admin boolean default false,
+  subscription_token text default null,
+  email text default null,
   default_tax_rate numeric default 16,
   custom_stamp text default '',
   signature text default '',
@@ -139,6 +141,42 @@ create table if not exists public.n8n_webhooks (
   updated_at timestamptz default now()
 );
 
+-- 2.9 Organizations
+create table if not exists public.organizations (
+  id uuid primary key default gen_random_uuid(),
+  name text not null default 'Minha Empresa',
+  owner_id uuid references public.profiles(id) on delete cascade not null,
+  max_members int default 10,
+  created_at timestamptz default now()
+);
+
+-- 2.10 Organization Members
+create table if not exists public.org_members (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid references public.organizations(id) on delete cascade not null,
+  user_id uuid references public.profiles(id) on delete cascade,
+  email text not null,
+  name text default '',
+  role text not null check (role in ('admin', 'member')),
+  status text not null default 'active' check (status in ('active', 'invited', 'disabled')),
+  invited_by text,
+  last_login timestamptz,
+  created_at timestamptz default now()
+);
+
+-- 2.11 Transactions
+create table if not exists public.transactions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  type text not null check (type in ('INCOME', 'EXPENSE')),
+  amount numeric default 0,
+  description text default '',
+  category text default 'Outros',
+  date text not null,
+  timestamp bigint default 0,
+  receipt_id text
+);
+
 -- ============================================================
 -- 3. ÍNDICES
 -- ============================================================
@@ -153,6 +191,14 @@ create index if not exists idx_webhook_logs_created_at on public.webhook_logs(cr
 create index if not exists idx_saved_clients_user_id on public.saved_clients(user_id);
 create index if not exists idx_saved_products_user_id on public.saved_products(user_id);
 create index if not exists idx_n8n_webhooks_user_id on public.n8n_webhooks(user_id);
+create index if not exists idx_organizations_owner_id on public.organizations(owner_id);
+create index if not exists idx_org_members_org_id on public.org_members(org_id);
+create index if not exists idx_org_members_user_id on public.org_members(user_id);
+create index if not exists idx_org_members_status on public.org_members(status);
+create index if not exists idx_transactions_user_id on public.transactions(user_id);
+create index if not exists idx_transactions_date on public.transactions(date);
+create index if not exists idx_transactions_receipt_id on public.transactions(receipt_id);
+create index if not exists idx_profiles_email on public.profiles(email);
 
 -- ============================================================
 -- 4. ROW LEVEL SECURITY
@@ -213,6 +259,8 @@ create policy "Usuários podem ver próprios clientes"
   on public.saved_clients for select using (auth.uid() = user_id);
 create policy "Usuários podem inserir próprios clientes"
   on public.saved_clients for insert with check (auth.uid() = user_id);
+create policy "Usuários podem atualizar próprios clientes"
+  on public.saved_clients for update using (auth.uid() = user_id);
 create policy "Usuários podem deletar próprios clientes"
   on public.saved_clients for delete using (auth.uid() = user_id);
 
@@ -222,6 +270,8 @@ create policy "Usuários podem ver próprios produtos"
   on public.saved_products for select using (auth.uid() = user_id);
 create policy "Usuários podem inserir próprios produtos"
   on public.saved_products for insert with check (auth.uid() = user_id);
+create policy "Usuários podem atualizar próprios produtos"
+  on public.saved_products for update using (auth.uid() = user_id);
 create policy "Usuários podem deletar próprios produtos"
   on public.saved_products for delete using (auth.uid() = user_id);
 
@@ -235,6 +285,57 @@ create policy "Usuários podem atualizar próprios n8n webhooks"
   on public.n8n_webhooks for update using (auth.uid() = user_id);
 create policy "Usuários podem deletar próprios n8n webhooks"
   on public.n8n_webhooks for delete using (auth.uid() = user_id);
+
+-- 4.9 Organizations
+alter table public.organizations enable row level security;
+create policy "Usuários podem ver próprias organizações"
+  on public.organizations for select using (auth.uid() = owner_id);
+create policy "Usuários podem criar organizações"
+  on public.organizations for insert with check (auth.uid() = owner_id);
+create policy "Usuários podem atualizar próprias organizações"
+  on public.organizations for update using (auth.uid() = owner_id);
+
+-- 4.10 Organization Members
+alter table public.org_members enable row level security;
+create policy "Membros podem ver membros da própria org"
+  on public.org_members for select using (
+    exists (
+      select 1 from public.org_members om
+      where om.org_id = org_members.org_id and om.user_id = auth.uid()
+    )
+  );
+create policy "Admins podem inserir membros"
+  on public.org_members for insert with check (
+    exists (
+      select 1 from public.org_members om
+      where om.org_id = org_members.org_id and om.user_id = auth.uid() and om.role = 'admin'
+    )
+  );
+create policy "Admins podem atualizar membros"
+  on public.org_members for update using (
+    exists (
+      select 1 from public.org_members om
+      where om.org_id = org_members.org_id and om.user_id = auth.uid() and om.role = 'admin'
+    )
+  );
+create policy "Admins podem deletar membros"
+  on public.org_members for delete using (
+    exists (
+      select 1 from public.org_members om
+      where om.org_id = org_members.org_id and om.user_id = auth.uid() and om.role = 'admin'
+    )
+  );
+
+-- 4.11 Transactions
+alter table public.transactions enable row level security;
+create policy "Usuários podem ver próprias transações"
+  on public.transactions for select using (auth.uid() = user_id);
+create policy "Usuários podem inserir próprias transações"
+  on public.transactions for insert with check (auth.uid() = user_id);
+create policy "Usuários podem atualizar próprias transações"
+  on public.transactions for update using (auth.uid() = user_id);
+create policy "Usuários podem deletar próprias transações"
+  on public.transactions for delete using (auth.uid() = user_id);
 
 -- ============================================================
 -- 5. FUNÇÕES E TRIGGERS
@@ -269,13 +370,17 @@ create trigger set_updated_at_n8n_webhooks
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, company_name, currency, language)
+  insert into public.profiles (id, company_name, currency, language, email)
   values (
     new.id,
     new.raw_user_meta_data->>'company_name',
     coalesce(new.raw_user_meta_data->>'currency', 'MZN'),
-    coalesce(new.raw_user_meta_data->>'language', 'pt')
-  );
+    coalesce(new.raw_user_meta_data->>'language', 'pt'),
+    new.email
+  )
+  on conflict (id) do update set
+    email = excluded.email,
+    updated_at = now();
   return new;
 end;
 $$ language plpgsql security definer set search_path = public;

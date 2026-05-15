@@ -108,7 +108,7 @@ class SyncService {
         }
 
         const { error: receiptError } = await supabase
-          .from('receipts')
+          .from('documents')
           .upsert(receiptPayload);
         if (receiptError) {
           console.error('Error syncing receipt_transaction_bundle (receipt):', receiptError);
@@ -202,7 +202,7 @@ class SyncService {
     if (!userId || !navigator.onLine) return;
 
     try {
-      const tables = ['receipts', 'transactions', 'clients', 'products', 'settings'] as const;
+      const tables = ['documents', 'transactions', 'saved_clients', 'saved_products', 'settings'] as const;
       
       for (const table of tables) {
         let supabaseTable = table;
@@ -219,8 +219,15 @@ class SyncService {
         }
 
         if (data) {
-          // biome-ignore lint/suspicious/noExplicitAny: Dexie dynamic table access pattern
-          const localTable = (db as Record<string, { bulkPut: (items: Record<string, unknown>[]) => Promise<unknown> }>)[table];
+          const tableMap: Record<string, string> = {
+            documents: 'receipts',
+            transactions: 'transactions',
+            saved_clients: 'clients',
+            saved_products: 'products',
+            settings: 'settings'
+          };
+          const localTableName = tableMap[table] || table;
+          const localTable = (db as Record<string, { bulkPut: (items: Record<string, unknown>[]) => Promise<unknown> }>)[localTableName];
           if (localTable) {
             const mappedData = data.map((d: Record<string, unknown>) => {
               const item = { ...d };

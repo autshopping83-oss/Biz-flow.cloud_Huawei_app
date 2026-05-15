@@ -88,7 +88,7 @@ export function useAuth(notify: (msg: string, type: 'success' | 'error' | 'info'
       if (error) throw error;
 
       if (authData.user) {
-        await supabase.from('profiles').insert({
+        await supabase.from('profiles').upsert({
           id: authData.user.id,
           company_name: data?.companyName?.trim() || '',
           address: data?.address?.trim() || '',

@@ -188,7 +188,7 @@ class ProductService {
   async syncFromSupabase(userId: string): Promise<void> {
     try {
       const { data, error } = await supabase
-        .from('products')
+        .from('saved_products')
         .select('*')
         .eq('user_id', userId);
 
