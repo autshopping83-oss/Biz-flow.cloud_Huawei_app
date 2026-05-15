@@ -75,7 +75,6 @@ export async function createDocument(req: ApiRequest): Promise<ApiResponse> {
     discount: (data.discount as number) || 0,
     total: (data.total as number) || 0,
     createdAt: Date.now(),
-    type: (data.type as DocumentType) || 'RECEIPT',
   };
 
   await db.receipts.put(document);
