@@ -5,7 +5,8 @@ const DYNAMIC_CACHE = 'bizflow-dynamic-v36';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './index.css'
 ];
 
 self.addEventListener('install', (event) => {
