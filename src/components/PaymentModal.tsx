@@ -25,8 +25,10 @@ const PLANS = [
   },
 ];
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ilukexelmihfdezbgcrp.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const EDGE_FUNCTION_URL = import.meta.env.VITE_PAYSUITE_CREATE_PAYMENT_URL
-  || 'https://ilukexelmihfdezbgcrp.supabase.co/functions/v1/create-payment';
+  || `${SUPABASE_URL}/functions/v1/create-payment`;
 
 export const PaymentModal: React.FC<Props> = ({ onClose, userEmail = '', userName = '', userId = '' }) => {
   const [loading, setLoading] = useState(false);
@@ -44,7 +46,11 @@ export const PaymentModal: React.FC<Props> = ({ onClose, userEmail = '', userNam
     try {
       const response = await fetch(EDGE_FUNCTION_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
         body: JSON.stringify({
           plan_name: selectedPlan,
           user_id: userId,
