@@ -105,7 +105,7 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
           onNewDocument={editor.initNewDocument} onOpenSettings={() => setShowSettingsModal(true)}
           onLoadDocument={(doc) => { editor.setFormData(doc); setCurrentView('app'); editor.setMobileTab('preview'); }}
           onViewHistory={() => setCurrentView('history')} onToggleTheme={toggleTheme}
-          t={t} userId={session?.user?.id || ''} onDeleteDocument={editor.handleDeleteDocument}
+          t={t} userId={session?.user?.id || ''} userEmail={session?.user?.email} userName={session?.user?.user_metadata?.full_name} onDeleteDocument={editor.handleDeleteDocument}
           onInstallApp={handleInstallApp} showInstallButton={!!installPrompt} />
       )}
       {currentView === 'history' && !isGuest && (

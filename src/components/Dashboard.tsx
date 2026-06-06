@@ -8,6 +8,7 @@ import { ProductCatalog } from './ProductCatalog';
 import { AdminDashboard } from './AdminDashboard';
 import { UserManagement } from './UserManagement';
 import { Logo } from './Logo';
+import { PricingModal } from './PricingModal';
 
 interface DashboardProps {
   history: ReceiptData[];
@@ -20,6 +21,8 @@ interface DashboardProps {
   onToggleTheme: () => void;
   t: (key: string) => string;
   userId: string;
+  userEmail?: string;
+  userName?: string;
   onDeleteDocument?: (id: string) => void;
   onInstallApp?: () => void;
   showInstallButton?: boolean;
@@ -29,7 +32,7 @@ interface DashboardProps {
 type DashTab = 'OVERVIEW' | 'COMMUNITY' | 'HISTORY' | 'FINANCE' | 'CATALOG';
 
 export const Dashboard: React.FC<DashboardProps> = ({
-  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, onDeleteDocument, onInstallApp, showInstallButton, orgId
+  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, userEmail, userName, onDeleteDocument, onInstallApp, showInstallButton, orgId
 }) => {
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -37,6 +40,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [showCatalog, setShowCatalog] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
   const recentHistory = history.slice(0, 5);
 
   const handleNav = (tab: DashTab) => {
@@ -128,8 +132,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                  <i className={`fa-solid fa-users w-5 text-center ${activeTab === 'COMMUNITY' ? 'text-blue-600' : 'text-slate-400'}`}></i> Comunidade
             </button>
             
-            <button onClick={handleOpenEbooks} className="w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border border-transparent text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
-                 <i className="fa-solid fa-layer-group w-5 text-center text-indigo-500"></i> Vender E-books
+
+            
+            <button onClick={() => { setShowPricing(true); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border border-transparent text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                 <i className="fa-solid fa-crown w-5 text-center text-emerald-500"></i> Planos e Preços
             </button>
 
             <button onClick={() => { setIsMenuOpen(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'apiDashboard' })); }} className="w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border border-transparent text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20">
@@ -263,21 +269,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <p className="text-violet-100 text-sm mt-2 opacity-90 font-medium">Criar cotação.</p>
                      </button>
 
-                     {/* BizFlow Pages / Ebooks Card - UNLOCKED FOR EVERYONE */}
-                     <button onClick={handleOpenEbooks}
-                        className="group relative overflow-hidden rounded-[20px] p-7 text-left shadow-xl transition-all duration-300 border bg-white dark:bg-slate-800 shadow-slate-200/50 dark:shadow-black/50 hover:shadow-2xl hover:scale-[1.02] border-slate-200 dark:border-slate-700"
-                     >
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><i className="fa-solid fa-layer-group text-9xl text-indigo-600"></i></div>
-                        
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 text-white text-2xl shadow-lg transition-transform group-hover:rotate-6 bg-gradient-to-br from-indigo-500 to-purple-600 shadow-indigo-200 dark:shadow-none">
-                           <i className="fa-solid fa-layer-group"></i>
-                        </div>
-                        <h3 className="font-bold text-2xl tracking-tight text-slate-900 dark:text-white leading-tight">Vender E-books & Produtos</h3>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-3 font-medium leading-relaxed">
-                          Crie páginas de vendas profissionais, gerencie produtos digitais e aceite pagamentos.
-                        </p>
-                     </button>
+
                  </div>
+
 
                  {/* QUICK ACCESS BAR */}
                  <div className="mb-12">
@@ -390,6 +384,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
           isAdmin={companySettings.isAdmin || false}
           onClose={() => setShowUserManagement(false)}
           currentUserEmail={companySettings.contact}
+        />
+      )}
+
+      {/* Pricing Modal */}
+      {showPricing && (
+        <PricingModal
+          currentPlan={companySettings.plan || 'FREE'}
+          onClose={() => setShowPricing(false)}
+          onSelectPlan={(plan) => {
+            setShowPricing(false);
+          }}
+          userEmail={userEmail || companySettings.contact}
+          userName={userName || companySettings.name}
         />
       )}
       </main>

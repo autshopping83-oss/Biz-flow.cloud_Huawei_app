@@ -140,7 +140,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({ currentPlan, onClose
              </p>
              <ul className="space-y-3 mb-8 text-sm text-white font-medium">
                <li className="flex items-start gap-2"><i className="fa-solid fa-circle-check text-yellow-400 mt-1"></i> <strong>Documentos Ilimitados</strong></li>
-               <li className="flex items-start gap-2"><i className="fa-solid fa-check text-blue-300 mt-1"></i> Venda de E-books e Links</li>
+               <li className="flex items-start gap-2"><i className="fa-solid fa-check text-blue-300 mt-1"></i> Links de Pagamento</li>
                <li className="flex items-start gap-2"><i className="fa-solid fa-check text-blue-300 mt-1"></i> Relatórios financeiros detalhados</li>
                <li className="flex items-start gap-2"><i className="fa-solid fa-check text-blue-300 mt-1"></i> Multi-moeda + conversão auto</li>
                <li className="flex items-start gap-2"><i className="fa-solid fa-check text-blue-300 mt-1"></i> Backup diário automático</li>
