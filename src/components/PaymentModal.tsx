@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '../services/supabaseClient';
 import { useToast } from './ToastContext';
 
 interface Props {
@@ -13,7 +14,7 @@ const PLANS = [
     id: 'Pro',
     name: 'Pro',
     price: '250 MT/mês',
-    features: ['Negócios ilimitados', 'Clientes ilimitados', 'Relatórios avançados', 'Multi-moeda', 'Suporte prioritário'],
+    features: ['Documentos ilimitados', 'Clientes ilimitados', 'Relatórios avançados', 'Multi-moeda', 'Suporte prioritário'],
     popular: true,
   },
   {
@@ -24,11 +25,6 @@ const PLANS = [
     popular: false,
   },
 ];
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ilukexelmihfdezbgcrp.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const EDGE_FUNCTION_URL = import.meta.env.VITE_PAYSUITE_CREATE_PAYMENT_URL
-  || `${SUPABASE_URL}/functions/v1/create-payment`;
 
 export const PaymentModal: React.FC<Props> = ({ onClose, userEmail = '', userName = '', userId = '' }) => {
   const [loading, setLoading] = useState(false);
@@ -44,29 +40,26 @@ export const PaymentModal: React.FC<Props> = ({ onClose, userEmail = '', userNam
     setLoading(true);
 
     try {
-      const response = await fetch(EDGE_FUNCTION_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
           plan_name: selectedPlan,
           user_id: userId,
-          return_url: 'https://biz-flow.cloud', // v2
-        }),
+          return_url: 'https://biz-flow.cloud',
+        },
       });
 
-      const data = await response.json();
+      if (error) {
+        console.error('Edge function error:', error);
+        notify(error.message || 'Erro ao criar pagamento. Tente novamente.', 'error');
+        return;
+      }
 
-      if (data.status === 'success' && data.data?.checkout_url) {
-        // Open PaySuite checkout in new tab
+      if (data?.status === 'success' && data?.data?.checkout_url) {
         window.open(data.data.checkout_url, '_blank');
         notify('Redirecionando para o pagamento...', 'info');
         onClose();
       } else {
-        notify(data.message || 'Erro ao criar pagamento. Tente novamente.', 'error');
+        notify(data?.message || 'Erro ao criar pagamento. Tente novamente.', 'error');
       }
     } catch (err) {
       console.error('Payment error:', err);
