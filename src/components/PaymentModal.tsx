@@ -54,7 +54,7 @@ export const PaymentModal: React.FC<Props> = ({ onClose, userEmail = '', userNam
         body: JSON.stringify({
           plan_name: selectedPlan,
           user_id: userId,
-          return_url: 'https://biz-flow.cloud',
+          return_url: 'https://biz-flow.cloud', // v2
         }),
       });
 
