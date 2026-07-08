@@ -70,6 +70,20 @@ export const useAppLifecycle = ({
       const localSettings = await getCompanySettings('local');
       if (localSettings) {
         setCompanySettings(prev => ({ ...prev, ...localSettings, plan: 'PRO' }));
+        
+        // Apply theme from settings
+        const theme = localSettings.theme || 'light';
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } else {
+        // Check localStorage for theme preference
+        const savedTheme = localStorage.getItem('bizflow-theme') || 'light';
+        if (savedTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
       }
 
       // Load history, clients, products from local storage

@@ -59,7 +59,6 @@ export function useDocumentEditor({
   });
 
   const initNewDocument = (type: DocumentType) => {
-    if (!isGuest) return;
     const today = new Date().toISOString().split('T')[0] ?? '';
     setFormData({
       ...InitialReceipt,
