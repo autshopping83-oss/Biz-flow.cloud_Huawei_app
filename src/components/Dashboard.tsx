@@ -1,14 +1,8 @@
-
 import React, { useState } from 'react';
 import { ReceiptData, CompanySettings, DocumentType } from '../types';
 import { formatMoney } from '../services/translationService';
-import { CommunityFeed } from './CommunityFeed';
 import { FinanceManager } from './FinanceManager';
-import { ProductCatalog } from './ProductCatalog';
-import { AdminDashboard } from './AdminDashboard';
-import { UserManagement } from './UserManagement';
 import { Logo } from './Logo';
-import { PricingModal } from './PricingModal';
 
 interface DashboardProps {
   history: ReceiptData[];
@@ -21,34 +15,24 @@ interface DashboardProps {
   onToggleTheme: () => void;
   t: (key: string) => string;
   userId: string;
-  userEmail?: string;
-  userName?: string;
   onDeleteDocument?: (id: string) => void;
   onInstallApp?: () => void;
   showInstallButton?: boolean;
-  orgId?: string;
 }
 
-type DashTab = 'OVERVIEW' | 'COMMUNITY' | 'HISTORY' | 'FINANCE' | 'CATALOG';
+type DashTab = 'OVERVIEW' | 'FINANCE';
 
 export const Dashboard: React.FC<DashboardProps> = ({
-  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, userEmail, userName, onDeleteDocument, onInstallApp, showInstallButton, orgId
+  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, onDeleteDocument, onInstallApp, showInstallButton
 }) => {
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<DashTab>('OVERVIEW');
-  const [showCatalog, setShowCatalog] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
-  const [showUserManagement, setShowUserManagement] = useState(false);
-  const [showPricing, setShowPricing] = useState(false);
   const recentHistory = history.slice(0, 5);
 
   const handleNav = (tab: DashTab) => {
     setActiveTab(tab);
     setIsMenuOpen(false);
-    if (tab === 'CATALOG') {
-      setShowCatalog(true);
-    }
   };
 
   // Calculate Monthly Revenue
@@ -60,15 +44,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
       return date.getMonth() === currentMonth && date.getFullYear() === currentYear && (d.type === 'INVOICE' || d.type === 'RECEIPT');
     })
     .reduce((sum, d) => sum + d.total, 0);
-
-  // URL do novo aplicativo de Ebooks
-  const PAGES_APP_URL = window.location.hostname.includes('localhost') 
-    ? 'http://localhost:5173' 
-    : 'https://p-gina-biz-flow.vercel.app';
-
-  const handleOpenEbooks = () => {
-     window.open(PAGES_APP_URL, "_blank");
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 relative overflow-x-hidden transition-colors duration-500">
@@ -97,7 +72,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </p>
                 <div className="flex items-center gap-3">
                    {companySettings.logo ? (
-                      <img src={companySettings.logo} className="w-10 h-10 rounded-full object-cover bg-white" />
+                      <img src={companySettings.logo} className="w-10 h-10 rounded-full object-cover bg-white" alt="Logo" />
                    ) : (
                       <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center text-slate-400"><i className="fa-solid fa-building"></i></div>
                    )}
@@ -123,35 +98,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <button onClick={() => handleNav('FINANCE')} className={`w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border transition-all ${activeTab === 'FINANCE' ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white shadow-sm' : 'bg-transparent border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                  <i className={`fa-solid fa-chart-pie w-5 text-center ${activeTab === 'FINANCE' ? 'text-blue-600' : 'text-slate-400'}`}></i> {t('finance')}
             </button>
-
-            <button onClick={() => handleNav('CATALOG')} className={`w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border transition-all ${activeTab === 'CATALOG' ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white shadow-sm' : 'bg-transparent border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                 <i className={`fa-solid fa-boxes-stacked w-5 text-center ${activeTab === 'CATALOG' ? 'text-blue-600' : 'text-slate-400'}`}></i> Catálogo
-            </button>
-
-            <button onClick={() => handleNav('COMMUNITY')} className={`w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border transition-all ${activeTab === 'COMMUNITY' ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white shadow-sm' : 'bg-transparent border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                 <i className={`fa-solid fa-users w-5 text-center ${activeTab === 'COMMUNITY' ? 'text-blue-600' : 'text-slate-400'}`}></i> Comunidade
-            </button>
-            
-
-            
-            <button onClick={() => { setShowPricing(true); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border border-transparent text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
-                 <i className="fa-solid fa-crown w-5 text-center text-emerald-500"></i> Planos e Preços
-            </button>
-
-            <button onClick={() => { setIsMenuOpen(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'apiDashboard' })); }} className="w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border border-transparent text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20">
-                 <i className="fa-solid fa-code w-5 text-center text-purple-500"></i> API Dashboard
-            </button>
-
-            {companySettings.isAdmin && (
-              <>
-                <button onClick={() => { setShowAdmin(true); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border border-transparent text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
-                  <i className="fa-solid fa-lock w-5 text-center text-red-500"></i> Painel Admin
-                </button>
-                <button onClick={() => { setShowUserManagement(true); setIsMenuOpen(false); }} className="w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border border-transparent text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
-                  <i className="fa-solid fa-users-gear w-5 text-center text-emerald-500"></i> Sub-usuários
-                </button>
-              </>
-            )}
             
             <div className="border-t border-slate-100 dark:border-slate-800 my-4 mx-2"></div>
 
@@ -196,9 +142,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
          
-         {activeTab === 'COMMUNITY' ? (
-            <CommunityFeed currentUser={companySettings} t={t} />
-         ) : activeTab === 'FINANCE' ? (
+         {activeTab === 'FINANCE' ? (
             <FinanceManager currency={companySettings.currency} t={t} userId={userId} lang={companySettings.language} />
          ) : (
             <div className="animate-fadeIn">
@@ -269,9 +213,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <p className="text-violet-100 text-sm mt-2 opacity-90 font-medium">Criar cotação.</p>
                      </button>
 
-
                  </div>
-
 
                  {/* QUICK ACCESS BAR */}
                  <div className="mb-12">
@@ -285,11 +227,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                        <button onClick={() => handleNav('FINANCE')} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-slate-800 transition-all flex items-center gap-3 group shadow-sm">
                           <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform"><i className="fa-solid fa-chart-simple"></i></div>
                           <span className="font-bold text-slate-700 dark:text-slate-200 text-sm">Relatórios</span>
-                       </button>
-                       
-                       <button onClick={() => handleNav('COMMUNITY')} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-indigo-300 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-all flex items-center gap-3 group shadow-sm">
-                          <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform"><i className="fa-solid fa-users"></i></div>
-                          <span className="font-bold text-slate-700 dark:text-slate-200 text-sm">Comunidade</span>
                        </button>
                     </div>
                  </div>
@@ -358,49 +295,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                  )}
             </div>
          )}
-
-      {/* Product Catalog Modal */}
-      {showCatalog && (
-        <ProductCatalog
-          userId={userId}
-          t={t}
-          fMoney={(v: number) => formatMoney(v, companySettings.currency, companySettings.language)}
-          onClose={() => setShowCatalog(false)}
-        />
-      )}
-
-      {/* Admin Dashboard Modal */}
-      {showAdmin && (
-        <AdminDashboard
-          onClose={() => setShowAdmin(false)}
-        />
-      )}
-
-      {/* User Management Modal */}
-      {showUserManagement && (
-        <UserManagement
-          userId={userId}
-          orgId={orgId || userId}
-          isAdmin={companySettings.isAdmin || false}
-          onClose={() => setShowUserManagement(false)}
-          currentUserEmail={companySettings.contact}
-        />
-      )}
-
-      {/* Pricing Modal */}
-      {showPricing && (
-        <PricingModal
-          currentPlan={companySettings.plan || 'FREE'}
-          onClose={() => setShowPricing(false)}
-          onSelectPlan={(plan) => {
-            setShowPricing(false);
-          }}
-          userEmail={userEmail || companySettings.contact}
-          userName={userName || companySettings.name}
-        />
-      )}
       </main>
     </div>
   );
 };
-// build-timestamp: 1780759077

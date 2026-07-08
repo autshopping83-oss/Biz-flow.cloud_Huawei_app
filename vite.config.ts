@@ -14,8 +14,6 @@ export default defineConfig({
         manualChunks: {
           'vendor-react': ['react', 'react-dom'],
           'vendor-pdf': ['jspdf', 'html2canvas'],
-          'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-capacitor': ['@capacitor/core'],
         },
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',

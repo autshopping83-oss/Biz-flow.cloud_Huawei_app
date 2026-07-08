@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
 import { ReceiptData, CompanySettings } from '../types';
-import { emailService } from '../pages/N8N/services/emailService';
-import { whatsappService } from '../pages/N8N/services/whatsappService';
-import { documentService } from '../pages/N8N/services/documentService';
-import { webhookService } from '../pages/N8N/services/webhookService';
 import { DocumentShareModalView } from './DocumentShareModalView';
 
 interface DocumentShareModalProps {
@@ -20,59 +16,6 @@ interface DocumentShareModalProps {
 }
 
 type ShareMethod = 'email' | 'whatsapp' | 'download' | 'print' | null;
-
-interface SharedItem {
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
-}
-
-function buildDocumentPayload(
-  formData: ReceiptData,
-  companySettings: CompanySettings,
-  method: 'email' | 'whatsapp',
-  recipient: string,
-  recipientName: string
-): Record<string, unknown> {
-  const documentTypeLabel = formData.type === 'INVOICE' ? 'Fatura'
-    : formData.type === 'INVOICE_RECEIPT' ? 'Fatura-Recibo'
-    : formData.type === 'QUOTE' ? 'Orçamento' : 'Recibo';
-
-  return {
-    method,
-    recipient,
-    recipientName,
-    documentId: formData.id,
-    documentNumber: formData.number,
-    documentType: formData.type,
-    documentTypeLabel,
-    clientName: recipientName,
-    clientContact: recipient,
-    total: formData.total,
-    currency: formData.currency,
-    subtotal: formData.subtotal,
-    taxRate: formData.taxRate,
-    taxAmount: formData.taxAmount,
-    discount: formData.discount,
-    date: formData.date,
-    dueDate: formData.dueDate,
-    items: formData.items.map((item: SharedItem) => ({
-      description: item.description,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      total: item.total,
-    })),
-    companyName: companySettings.name,
-    companyContact: companySettings.contact,
-    companyNuit: companySettings.nuit,
-    stampText: formData.stampText,
-    paymentMethod: formData.paymentMethod,
-    shareLink: typeof window !== 'undefined'
-      ? `${window.location.origin}/shared/${formData.id}`
-      : undefined,
-  };
-}
 
 export const DocumentShareModal: React.FC<DocumentShareModalProps> = ({
   formData, companySettings, userId, isGeneratingPdf, isPrinting,
@@ -92,30 +35,17 @@ export const DocumentShareModal: React.FC<DocumentShareModalProps> = ({
     setSendResult(null);
 
     try {
-      await documentService.notifyCreated({
-        documentId: formData.id, documentNumber: formData.number,
-        documentType: formData.type, clientName: recipientName,
-        total: formData.total, currency: formData.currency, pdfUrl: formData.pdfUrl,
-      }, userId);
-
-      if (method === 'email') {
-        await emailService.sendInvoiceEmail(recipient, formData.number, recipientName, '', userId);
+      if (method === 'whatsapp') {
+        const cleanPhone = recipient.replace(/\D/g, '');
+        const text = `Olá ${recipientName}, segue o documento ${formData.number} no valor de ${formData.total} ${formData.currency}.`;
+        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, '_blank');
+        setSendResult({ success: true, message: `WhatsApp aberto para ${recipient}!` });
       } else {
-        await whatsappService.sendDocument(recipient, formData.number, recipientName, formData.total, formData.currency, formData.pdfUrl, userId);
+        const subject = `Documento ${formData.number}`;
+        const body = `Olá ${recipientName},\n\nSegue o documento ${formData.number} no valor de ${formData.total} ${formData.currency}.\n\nCumprimentos,\n${companySettings.name}`;
+        window.open(`mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+        setSendResult({ success: true, message: `Email aberto para ${recipient}!` });
       }
-
-      await documentService.notifyShared({
-        documentId: formData.id, documentNumber: formData.number,
-        documentType: formData.type, clientName: recipientName,
-        total: formData.total, currency: formData.currency, pdfUrl: formData.pdfUrl,
-      }, method, recipient, userId);
-
-      const payload = buildDocumentPayload(formData, companySettings, method, recipient, recipientName);
-      await webhookService.send('document.shared', payload, userId, {
-        channel: method, template: 'invoice', priority: 'normal',
-      });
-
-      setSendResult({ success: true, message: `Documento ${formData.number} enviado com sucesso para ${recipient}!` });
     } catch (err: unknown) {
       setSendResult({ success: false, message: err instanceof Error ? err.message : 'Erro ao enviar. Tente novamente.' });
     } finally {

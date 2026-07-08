@@ -6,9 +6,8 @@
  */
 
 import { useState, useRef } from 'react';
-import { ReceiptData, CompanySettings, DocumentType, LineItem, SavedClient, SavedProduct } from '../../../types';
+import { ReceiptData, CompanySettings, DocumentType, LineItem } from '../../../types';
 import { generateNextReceiptNumber, saveReceipt, deleteReceipt } from '../../../services/storageService';
-import { improveDescription } from '../../../services/geminiService';
 import { useSignatureCanvas } from '../../../app/hooks/useSignatureCanvas';
 import { useDocumentActions } from '../../../app/hooks/useDocumentActions';
 
@@ -20,7 +19,6 @@ const InitialReceipt: ReceiptData = {
 };
 
 interface UseDocumentEditorProps {
-  sessionUserId?: string;
   isGuest: boolean;
   history: ReceiptData[];
   companySettings: CompanySettings;
@@ -30,7 +28,7 @@ interface UseDocumentEditorProps {
 }
 
 export function useDocumentEditor({
-  sessionUserId, isGuest, history, companySettings,
+  isGuest, history, companySettings,
   setHistory, setCurrentView, notify,
 }: UseDocumentEditorProps) {
   const [formData, setFormData] = useState<ReceiptData>(InitialReceipt);
@@ -48,22 +46,20 @@ export function useDocumentEditor({
 
   const { isGeneratingPdf, isSharing, isPrinting, localDirHandle, requestFolderPermission, handleGeneratePDF, handleShareWhatsApp, handlePrintThermal } = useDocumentActions({
     formData,
-    sessionUserId,
     receiptRef,
     ghostReceiptRef,
     thermalReceiptRef,
     notify,
     handleSave: async (silent = false) => {
-      if (!sessionUserId) return;
       if (!formData.clientName || formData.items.length === 0) return;
-      const newHistory = await saveReceipt(formData, sessionUserId);
+      const newHistory = await saveReceipt(formData, 'local');
       setHistory(newHistory);
-      if (!silent) notify('Dados sincronizados.', 'success');
+      if (!silent) notify('Dados guardados.', 'success');
     },
   });
 
   const initNewDocument = (type: DocumentType) => {
-    if (!sessionUserId && !isGuest) return;
+    if (!isGuest) return;
     const today = new Date().toISOString().split('T')[0] ?? '';
     setFormData({
       ...InitialReceipt,
@@ -85,9 +81,7 @@ export function useDocumentEditor({
   };
 
   const handleDuplicateDocument = (doc: ReceiptData) => {
-    const newDoc = { ...doc } as any;
-    delete newDoc.pdfUrl;
-    delete newDoc.synced;
+    const newDoc = { ...doc };
     setFormData({
       ...newDoc,
       id: crypto.randomUUID(),
@@ -124,10 +118,8 @@ export function useDocumentEditor({
   };
 
   const handleEnhanceDescription = async () => {
-    setIsEnhancing(true);
-    const res = await improveDescription(newItem.description || '');
-    setNewItem(p => ({ ...p, description: res }));
-    setIsEnhancing(false);
+    // AI enhancement disabled - no external API
+    notify('Funcionalidade de IA não disponível.', 'info');
   };
 
   const handleClearClient = () => {
@@ -159,7 +151,7 @@ export function useDocumentEditor({
   };
 
   const handleDeleteDocument = async (id: string) => {
-    const updated = await deleteReceipt(id, sessionUserId ?? '');
+    const updated = await deleteReceipt(id, 'local');
     setHistory(updated);
   };
 

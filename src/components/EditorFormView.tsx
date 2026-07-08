@@ -1,6 +1,5 @@
 import React from 'react';
 import { ReceiptData, LineItem, DocumentType, SavedClient, SavedProduct, Product } from '../types';
-import { ProductSearch } from './ProductSearch';
 
 interface EditorFormViewProps {
   formData: ReceiptData;
@@ -156,15 +155,9 @@ export const EditorFormView: React.FC<EditorFormViewProps> = ({
       <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mt-4 shadow-sm">
         <div className="flex gap-2 mb-3">
           <div className="flex-1">
-            {userId ? (
-              <ProductSearch value={newItem.description || ''} onChange={handleProductSearch} onSelect={handleProductSelect}
-                onNewProduct={handleShowNewProductModal} userId={userId} placeholder="Digite o nome do produto..."
-                icon="fa-search" currency={formData.currency} allowCreate={true} showNewProductModal={handleShowNewProductModal} />
-            ) : (
-              <input name="description" value={newItem.description} onChange={onNewItemChange}
-                placeholder="Digite o nome do produto..."
-                className="w-full bg-white dark:bg-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg p-2.5 pl-3 pr-10 text-sm outline-none focus:border-blue-500 transition-colors" autoComplete="off" />
-            )}
+            <input name="description" value={newItem.description} onChange={onNewItemChange}
+              placeholder="Digite o nome do produto..."
+              className="w-full bg-white dark:bg-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg p-2.5 pl-3 pr-10 text-sm outline-none focus:border-blue-500 transition-colors" autoComplete="off" />
           </div>
           <button onClick={onEnhanceDescription} disabled={isEnhancing || !newItem.description}
             className="w-10 flex items-center justify-center bg-white dark:bg-slate-700 border border-indigo-100 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition" title="Melhorar com IA">
@@ -259,7 +252,7 @@ export const EditorFormView: React.FC<EditorFormViewProps> = ({
 
     {/* Send Document */}
     <Section title="Enviar Documento" icon="fa-paper-plane">
-      <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Envie este documento diretamente para o cliente via Email ou WhatsApp usando integração n8n.</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Partilhe este documento diretamente para o cliente via WhatsApp ou Email.</p>
       <div className="grid grid-cols-2 gap-3">
         <button onClick={onSendWhatsApp} className="bg-[#25D366] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#20bd5a] transition-all active:scale-95 shadow-lg shadow-[#25D366]/20 flex items-center justify-center gap-2">
           <i className="fa-brands fa-whatsapp text-lg"></i> WhatsApp

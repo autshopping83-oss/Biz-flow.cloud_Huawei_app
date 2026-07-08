@@ -1,7 +1,5 @@
-
 import { ReceiptData, CompanySettings, DocumentType, Comment, Transaction, SavedClient, SavedProduct, Product } from '../types';
 import { db } from './db';
-import { syncService } from './syncService';
 
 // Chaves de localStorage para fallback
 const COMMENTS_KEY = 'bizflow_comments_v1';
@@ -88,8 +86,6 @@ export const addProduct = async (product: Omit<Product, 'id' | 'createdAt' | 'up
     };
 
     await db.catalog.add(newProduct);
-    await syncService.addToQueue('catalog', 'INSERT', newProduct as unknown as Record<string, unknown>);
-
     return newProduct;
   } catch (e) {
     throw new Error('Erro ao adicionar produto');
@@ -102,11 +98,6 @@ export const updateProduct = async (productId: string, updates: Partial<Pick<Pro
       ...updates,
       updatedAt: Date.now()
     });
-
-    const updatedProduct = await db.catalog.get(productId);
-    if (updatedProduct) {
-      await syncService.addToQueue('catalog', 'UPDATE', updatedProduct as unknown as Record<string, unknown>);
-    }
   } catch (e) {
     throw new Error('Erro ao atualizar produto');
   }
@@ -114,11 +105,7 @@ export const updateProduct = async (productId: string, updates: Partial<Pick<Pro
 
 export const deleteProduct = async (productId: string): Promise<void> => {
   try {
-    const product = await db.catalog.get(productId);
-    if (product) {
-      await db.catalog.delete(productId);
-      await syncService.addToQueue('catalog', 'DELETE', product);
-    }
+    await db.catalog.delete(productId);
   } catch (e) {
     throw new Error('Erro ao excluir produto');
   }
@@ -135,9 +122,8 @@ const learnClient = async (doc: ReceiptData, userId: string) => {
         nuit: doc.clientNuit,
         location: doc.clientLocation,
         userId
-      } as any;
+      } as SavedClient;
       await db.clients.add(newClient);
-      await syncService.addToQueue('clients', 'INSERT', newClient);
     }
   } catch (e) {}
 };
@@ -150,8 +136,7 @@ const learnProducts = async (doc: ReceiptData, userId: string) => {
       const exists = await db.products.where({ userId, description: item.description }).first();
       if (!exists) {
         const newProduct = { description: item.description, unitPrice: item.unitPrice, userId };
-        await db.products.add(newProduct as any);
-        await syncService.addToQueue('products', 'INSERT', newProduct);
+        await db.products.add(newProduct as SavedProduct);
       }
     }
   } catch (e) {}
@@ -177,9 +162,6 @@ export const saveReceipt = async (receipt: ReceiptData, userId: string): Promise
       };
 
       await db.transactions.put(transaction);
-      await syncService.addToQueue('receipt_transaction_bundle', 'INSERT', { receipt: dataWithUser, transaction });
-    } else {
-      await syncService.addToQueue('receipts', 'INSERT', dataWithUser);
     }
 
     await learnClient(receipt, userId);
@@ -196,7 +178,6 @@ export const deleteReceipt = async (id: string, userId: string): Promise<Receipt
   if (!userId) return [];
   try {
     await db.receipts.delete(id);
-    await syncService.addToQueue('receipts', 'DELETE', { id });
     return await getHistory(userId);
   } catch (e) {
     return [];
@@ -232,14 +213,13 @@ export const generateNextReceiptNumber = (history: ReceiptData[], type: Document
 export const saveCompanySettings = async (settings: CompanySettings, userId: string) => {
   if (!userId) return;
   const data = { ...settings, userId, id: userId };
-  await db.settings.put(data as any);
-  await syncService.addToQueue('settings', 'INSERT', data);
+  await db.settings.put(data as CompanySettings & { id: string });
 };
 
 export const getCompanySettings = async (userId: string): Promise<CompanySettings | null> => {
   if (!userId) return null;
   const stored = await db.settings.get(userId);
-  return stored ? stored as any : null;
+  return stored ? stored as CompanySettings : null;
 };
 
 export const getComments = async (): Promise<Comment[]> => {
@@ -289,13 +269,11 @@ export const addTransaction = async (t: Transaction, userId: string): Promise<Tr
   if (!userId) return [];
   const data = { ...t, userId };
   await db.transactions.add(data);
-  await syncService.addToQueue('transactions', 'INSERT', data);
   return await getTransactions(userId);
 };
 
 export const deleteTransaction = async (id: string, userId: string): Promise<Transaction[]> => {
   if (!userId) return [];
   await db.transactions.delete(id);
-  await syncService.addToQueue('transactions', 'DELETE', { id });
   return await getTransactions(userId);
 };

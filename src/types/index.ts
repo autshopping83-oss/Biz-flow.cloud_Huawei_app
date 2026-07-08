@@ -16,8 +16,8 @@ export interface ReceiptData {
   dueDate?: string; 
   
   // Localization
-  currency: string; // e.g., 'USD', 'EUR', 'MZN'
-  language: string; // 'pt', 'en', 'es', 'fr'
+  currency: string;
+  language: string;
 
   // Client Info
   clientName: string;
@@ -30,7 +30,7 @@ export interface ReceiptData {
   companyAddress?: string;
   companyNuit?: string;
   companyContact?: string;
-  companyLogo?: string; // Base64
+  companyLogo?: string;
   
   // Items
   items: LineItem[];
@@ -47,12 +47,12 @@ export interface ReceiptData {
   stampText?: string;
   signatureData?: string; 
   status?: 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE';
-  documentTheme?: 'color' | 'bw'; // NOVO: tema do documento
+  documentTheme?: 'color' | 'bw';
   
   // Meta
   createdAt: number;
-  pdfUrl?: string; // URL do PDF gerado
-  synced?: boolean; // Status de sincronização
+  pdfUrl?: string;
+  synced?: boolean;
 }
 
 export type SubscriptionPlan = 'FREE' | 'PRO' | 'ENTERPRISE';
@@ -68,9 +68,9 @@ export interface CompanySettings {
   language: string;
   theme?: 'light' | 'dark';
   plan: SubscriptionPlan;
-  isAdmin?: boolean; // New field to track admin status
-  customStamp?: string; // Base64 image for custom stamp
-  signature?: string; // Base64 image for digital signature
+  isAdmin?: boolean;
+  customStamp?: string;
+  signature?: string;
 }
 
 export interface Comment {
@@ -92,7 +92,7 @@ export interface Transaction {
   amount: number;
   description: string;
   category: string;
-  date: string; // ISO YYYY-MM-DD
+  date: string;
   timestamp: number;
   receiptId?: string;
 }
@@ -111,7 +111,6 @@ export interface SavedProduct {
   userId?: string;
 }
 
-// --- NEW PRODUCT CATALOG INTERFACE ---
 export interface Product {
   id: string;
   name: string;
@@ -121,64 +120,3 @@ export interface Product {
   createdAt: number;
   updatedAt: number;
 }
-
-export interface PaymentRequest {
-  id: string;
-  user_id: string;
-  user_name: string;
-  proof_url: string;
-  status: 'pending' | 'approved' | 'rejected';
-  created_at: string;
-}
-
-// --- DIGITAL GOODS API TYPES ---
-export interface DigitalGoodsService {
-  getDetails(itemIds: string[]): Promise<ItemDetails[]>;
-  listPurchases(): Promise<PurchaseDetails[]>;
-  consume(purchaseToken: string): Promise<void>;
-}
-
-export interface ItemDetails {
-  itemId: string;
-  title: string;
-  price: {
-    currency: string;
-    value: string;
-  };
-  description: string;
-  type: 'subscription' | 'inapp';
-}
-
-export interface PurchaseDetails {
-  itemId: string;
-  purchaseToken: string;
-  acknowledged: boolean;
-  purchaseState: 'purchased' | 'pending';
-}
-
-export interface BluetoothGattService {
-  uuid: string;
-  characteristics: BluetoothGattCharacteristic[];
-  getCharacteristic: (uuid: string) => Promise<BluetoothGattCharacteristic>;
-  getCharacteristics: (uuid?: string) => Promise<BluetoothGattCharacteristic[]>;
-}
-
-export interface BluetoothGattCharacteristic {
-  uuid: string;
-  properties: { write: boolean; writeWithoutResponse: boolean };
-  value: DataView | null;
-  writeValue: (value: ArrayBuffer) => Promise<void>;
-}
-
-export interface BluetoothPrinter {
-  id: string;
-  name: string;
-  gatt?: {
-    connect: () => Promise<void>;
-    connected: boolean;
-    disconnect: () => void;
-    getPrimaryService: (uuid: string) => Promise<BluetoothGattService>;
-    getPrimaryServices: (uuid?: string) => Promise<BluetoothGattService[]>;
-  };
-}
-

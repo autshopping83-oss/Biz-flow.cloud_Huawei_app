@@ -1,9 +1,7 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Transaction, TransactionType } from '../types';
 import { formatMoney } from '../services/translationService';
 import { useToast } from './ToastContext';
-import { analyzeReceiptImage } from '../services/geminiService';
 import { getTransactions, addTransaction, deleteTransaction } from '../services/storageService';
 
 interface Props {
@@ -157,33 +155,8 @@ export const FinanceManager: React.FC<Props> = ({ currency, t, userId, lang }) =
 
     setIsScanning(true);
     setShowForm(true);
-    notify("Analisando recibo com IA...", "info");
-
-    try {
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-            const base64 = reader.result as string;
-            const data = await analyzeReceiptImage(base64);
-            
-            if (data) {
-                setNewTrans({
-                    type: 'EXPENSE',
-                    amount: data.amount.toString(),
-                    description: data.description,
-                    category: data.category,
-                    date: data.date
-                });
-                notify("Dados extraídos com sucesso!", "success");
-            } else {
-                notify("Não foi possível ler o recibo. Tente preencher manualmente.", "error");
-            }
-            setIsScanning(false);
-        };
-        reader.readAsDataURL(file);
-    } catch (error) {
-        notify("Erro ao processar imagem.", "error");
-        setIsScanning(false);
-    }
+    notify("Funcionalidade de IA não disponível. Preencha manualmente.", "info");
+    setIsScanning(false);
   };
 
   const handleDelete = async (id: string) => {

@@ -1,8 +1,7 @@
 import React from 'react';
 import { ReceiptData, LineItem, DocumentType, SavedClient, SavedProduct, Product } from '../types';
-import { productService } from '../services/productService';
+import { addProduct } from '../services/storageService';
 import { useToast } from './ToastContext';
-import { n8nWebhookService } from '../services/n8nWebhookService';
 import { EditorFormView } from './EditorFormView';
 
 export interface EditorFormProps {
@@ -59,7 +58,12 @@ export const EditorForm: React.FC<EditorFormProps> = (props) => {
     if (!pendingItem || !userId) return;
     setIsSavingProduct(true);
     try {
-      await productService.createProduct(pendingItem.description || '', pendingItem.unitPrice || 0, userId, '');
+      await addProduct({
+        name: pendingItem.description || '',
+        price: pendingItem.unitPrice || 0,
+        userId,
+        category: ''
+      });
       notify(`Produto "${pendingItem.description}" salvo no catálogo`, 'success');
       setShowSaveProductModal(false);
       setPendingItem(null);
@@ -92,16 +96,12 @@ export const EditorForm: React.FC<EditorFormProps> = (props) => {
 
   const handleSendWhatsApp = async () => {
     if (!formData.clientContact) { notify("Adicione um contacto do cliente primeiro", "error"); return; }
-    notify("Enviando via WhatsApp...", "info");
-    const result = await n8nWebhookService.shareDocument(formData, 'whatsapp', formData.clientContact, userId);
-    notify(result.success ? "Documento enviado via WhatsApp com sucesso!" : "Erro ao enviar. Verifique a integração n8n.", result.success ? "success" : "error");
+    notify("Use o botão de partilha do navegador para enviar via WhatsApp", "info");
   };
 
   const handleSendEmail = async () => {
     if (!formData.clientContact) { notify("Adicione um email do cliente primeiro", "error"); return; }
-    notify("Enviando via Email...", "info");
-    const result = await n8nWebhookService.shareDocument(formData, 'email', formData.clientContact, userId);
-    notify(result.success ? "Documento enviado via Email com sucesso!" : "Erro ao enviar. Verifique a integração n8n.", result.success ? "success" : "error");
+    notify("Use o botão de partilha do navegador para enviar via Email", "info");
   };
 
   const viewProps = {

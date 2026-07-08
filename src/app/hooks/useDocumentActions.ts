@@ -1,16 +1,12 @@
 import { useCallback, useState } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { Filesystem, Directory } from '@capacitor/filesystem';
 import { saveDirectoryHandle } from '../../services/storageService';
-import { connectToPrinter, printTicket } from '../../services/printerService';
-import { supabase } from '../../services/supabaseClient';
 import { validators } from '../../utils/validators';
-import { ReceiptData, BluetoothPrinter } from '../../types';
+import { ReceiptData } from '../../types';
 
 interface UseDocumentActionsParams {
   formData: ReceiptData;
-  sessionUserId?: string;
   receiptRef: React.RefObject<HTMLDivElement | null>;
   ghostReceiptRef: React.RefObject<HTMLDivElement | null>;
   thermalReceiptRef: React.RefObject<HTMLDivElement | null>;
@@ -20,7 +16,6 @@ interface UseDocumentActionsParams {
 
 export const useDocumentActions = ({
   formData,
-  sessionUserId,
   receiptRef,
   ghostReceiptRef,
   thermalReceiptRef,
@@ -30,7 +25,6 @@ export const useDocumentActions = ({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [printer, setPrinter] = useState<BluetoothPrinter | null>(null);
   const [localDirHandle, setLocalDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
 
   const requestFolderPermission = useCallback(async () => {
@@ -47,7 +41,7 @@ export const useDocumentActions = ({
     }
   }, [notify]);
 
-  const generatePDFBlob = useCallback(async (): Promise<{ blob: Blob; fileName: string; base64: string } | null> => {
+  const generatePDFBlob = useCallback(async (): Promise<{ blob: Blob; fileName: string } | null> => {
     const targetRef = ghostReceiptRef.current || receiptRef.current;
     if (!targetRef) return null;
 
@@ -86,7 +80,7 @@ export const useDocumentActions = ({
         ? `${sanitizedNumber}_${sanitizedClientName}.pdf`
         : `${sanitizedNumber}_documento.pdf`;
 
-      return { blob: pdf.output('blob'), fileName, base64: pdf.output('datauristring').split(',')[1] ?? '' };
+      return { blob: pdf.output('blob'), fileName };
     } catch (error) {
       console.error(error);
       return null;
@@ -101,23 +95,7 @@ export const useDocumentActions = ({
       const pdfData = await generatePDFBlob();
       if (!pdfData) throw new Error('Falha ao gerar PDF.');
 
-      const { blob, fileName, base64 } = pdfData;
-
-      if (window.Capacitor?.isNativePlatform()) {
-        try {
-          const savedFile = await Filesystem.writeFile({
-            path: fileName,
-            data: base64,
-            directory: Directory.Documents,
-            recursive: true,
-          });
-          notify(`Salvo nativamente em: ${savedFile.uri}`, 'success');
-          if (sessionUserId) await handleSave(true);
-          return;
-        } catch (nativeErr) {
-          console.error('Native save error:', nativeErr);
-        }
-      }
+      const { blob, fileName } = pdfData;
 
       let dirHandle = localDirHandle;
       if (!dirHandle && window.showDirectoryPicker) {
@@ -148,13 +126,13 @@ export const useDocumentActions = ({
         link.click();
       }
 
-      if (sessionUserId) await handleSave(true);
+      await handleSave(true);
     } catch {
       notify('Erro na geração do PDF. Tente novamente.', 'error');
     } finally {
       setIsGeneratingPdf(false);
     }
-  }, [formData, generatePDFBlob, handleSave, localDirHandle, notify, requestFolderPermission, sessionUserId]);
+  }, [formData, generatePDFBlob, handleSave, localDirHandle, notify, requestFolderPermission]);
 
   const handleShareWhatsApp = useCallback(async () => {
     if (isSharing) return;
@@ -197,33 +175,9 @@ export const useDocumentActions = ({
     }
 
     setIsPrinting(true);
-
-    try {
-      let currentPrinter = printer;
-      if (!currentPrinter || !currentPrinter.gatt?.connected) {
-        notify('Solicitando acesso Bluetooth...', 'info');
-        currentPrinter = await connectToPrinter();
-        if (currentPrinter) {
-          setPrinter(currentPrinter);
-          notify(`Conectado: ${currentPrinter.name}`, 'success');
-        } else {
-          setIsPrinting(false);
-          return;
-        }
-      }
-
-      if (currentPrinter) {
-        notify('Enviando para impressão térmica...', 'info');
-        await printTicket(currentPrinter, targetRef);
-        notify('Impressão enviada!', 'success');
-      }
-    } catch {
-      notify('Erro na impressão. Verifique a conexão Bluetooth.', 'error');
-      setPrinter(null);
-    } finally {
-      setIsPrinting(false);
-    }
-  }, [isPrinting, notify, printer, thermalReceiptRef]);
+    notify('Impressão térmica requer Bluetooth. Use um navegador compatível.', 'info');
+    setIsPrinting(false);
+  }, [isPrinting, notify, thermalReceiptRef]);
 
   return {
     isGeneratingPdf,
