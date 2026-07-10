@@ -39,6 +39,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   handleSettingsSignatureStartDrawing,
   handleSettingsSignatureDraw,
   handleSettingsSignatureStopDrawing,
+  gmailConectado,
+  gmailEmail,
+  onConectarGmail,
 }) => (
   <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-fadeIn">
     <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors">
