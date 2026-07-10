@@ -31,8 +31,10 @@ export const useAppLifecycle = ({
   setLocalDirHandle,
   onReady,
 }: UseAppLifecycleParams) => {
-  const initializingRef = useRef(false);
+  const loadedForRef = useRef<string | null>(null);
   const onReadyCalledRef = useRef(false);
+  const currentViewRef = useRef(currentView);
+  currentViewRef.current = currentView;
 
   // Setup side effects once (listeners, etc.)
   useEffect(() => {
@@ -60,13 +62,12 @@ export const useAppLifecycle = ({
   // Load data when userId changes (first load and after login)
   useEffect(() => {
     if (!userId) return;
+    if (loadedForRef.current === userId) return;
+    loadedForRef.current = userId;
     loadLocalData();
   }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadLocalData = async () => {
-    if (initializingRef.current) return;
-    initializingRef.current = true;
-
     try {
       setIsGuest(false);
       
@@ -97,7 +98,8 @@ export const useAppLifecycle = ({
       setSavedProducts(await getSavedProducts(userId));
 
       // Navigate to home if on loading screen
-      if (['loading', 'login', 'register', 'forgotPassword'].includes(currentView)) {
+      const view = currentViewRef.current;
+      if (['loading', 'login', 'register', 'forgotPassword'].includes(view)) {
         setCurrentView('home');
       }
 
@@ -108,11 +110,10 @@ export const useAppLifecycle = ({
     } catch (error) {
       console.error('loadLocalData error:', error);
       // Fallback: show home even with error
-      if (['loading', 'login', 'register', 'forgotPassword'].includes(currentView)) {
+      const view = currentViewRef.current;
+      if (['loading', 'login', 'register', 'forgotPassword'].includes(view)) {
         setCurrentView('home');
       }
-    } finally {
-      initializingRef.current = false;
     }
   };
 
