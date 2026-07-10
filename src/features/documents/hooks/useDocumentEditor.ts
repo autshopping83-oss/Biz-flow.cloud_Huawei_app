@@ -93,7 +93,15 @@ export function useDocumentEditor({
 
   const handleFormDataChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(p => ({ ...p, [name]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      if (name === 'taxRate' || name === 'discount') {
+        const taxRate = name === 'taxRate' ? Number(value) : prev.taxRate;
+        const discount = name === 'discount' ? Number(value) : prev.discount;
+        return { ...updated, ...recalcular(prev.items, taxRate, discount) };
+      }
+      return updated;
+    });
   };
 
   const handleNewItemChange = (e: React.ChangeEvent<HTMLInputElement>) => {

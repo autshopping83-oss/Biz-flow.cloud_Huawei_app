@@ -78,7 +78,7 @@ export const HistoryPage: React.FC<Props> = ({ history, onBack, onLoadDocument, 
           <button onClick={() => onLoadDocument(doc)} title="Editar" className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-green-600 transition-colors">
             <i className="fa-solid fa-pencil"></i>
           </button>
-          <button onClick={() => onDeleteDocument(doc.id)} title="Excluir" className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-red-600 transition-colors">
+          <button onClick={() => { if (confirm('Tem certeza que deseja excluir este documento?')) onDeleteDocument(doc.id); }} title="Excluir" className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-red-600 transition-colors">
             <i className="fa-solid fa-trash"></i>
           </button>
         </div>
