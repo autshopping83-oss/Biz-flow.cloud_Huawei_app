@@ -1,53 +1,55 @@
 // src/features/products/ProductsPage.tsx
 import { useState, useEffect } from 'react';
-import { SavedProduct } from '../../types';
-import { getSavedProducts, addProduct, updateProduct, deleteProduct } from '../../services/storageService';
+import { Product } from '../../types';
+import { getProducts, addProduct, updateProduct, deleteProduct } from '../../services/storageService';
 
 interface Props {
   userId: string;
-  savedProducts: SavedProduct[];
   onBack: () => void;
-  onUpdateProducts: (products: SavedProduct[]) => void;
 }
 
-export const ProductsPage = ({ userId, savedProducts, onBack, onUpdateProducts }: Props) => {
+export const ProductsPage = ({ userId, onBack }: Props) => {
+  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ description: '', unitPrice: 0 });
-  const [refresh, setRefresh] = useState(0);
+  const [form, setForm] = useState({ name: '', price: 0, category: '' });
 
-  useEffect(() => {
-    if (userId) getSavedProducts(userId).then(onUpdateProducts);
-  }, [userId, refresh]); // eslint-disable-line react-hooks/exhaustive-deps
+  const loadProducts = async () => {
+    if (!userId) return;
+    const data = await getProducts(userId);
+    setProducts(data);
+  };
 
-  const filtered = savedProducts.filter(p =>
-    p.description.toLowerCase().includes(search.toLowerCase())
+  useEffect(() => { loadProducts(); }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const filtered = products.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleSave = async () => {
-    if (!form.description.trim()) return;
+    if (!form.name.trim()) return;
     if (editId !== null) {
-      await updateProduct(editId, { name: form.description, price: form.unitPrice });
+      await updateProduct(editId, { name: form.name, price: form.price });
     } else {
-      await addProduct({ name: form.description, price: form.unitPrice, userId, category: '' });
+      await addProduct({ name: form.name, price: form.price, userId, category: form.category });
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ description: '', unitPrice: 0 });
-    setRefresh(r => r + 1);
+    setForm({ name: '', price: 0, category: '' });
+    await loadProducts();
   };
 
-  const handleEdit = (item: SavedProduct & { id?: number }) => {
-    setForm({ description: item.description, unitPrice: item.unitPrice });
-    setEditId(String(item.id));
+  const handleEdit = (p: Product) => {
+    setForm({ name: p.name, price: p.price, category: p.category || '' });
+    setEditId(p.id);
     setShowForm(true);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir este produto?')) return;
     await deleteProduct(id);
-    setRefresh(r => r + 1);
+    await loadProducts();
   };
 
   return (
@@ -58,7 +60,7 @@ export const ProductsPage = ({ userId, savedProducts, onBack, onUpdateProducts }
             <button onClick={onBack} className="text-sm text-blue-600 hover:underline mb-2">&larr; Voltar</button>
             <h1 className="text-2xl font-bold dark:text-white">Produtos</h1>
           </div>
-          <button onClick={() => { setShowForm(true); setEditId(null); setForm({ description: '', unitPrice: 0 }); }}
+          <button onClick={() => { setShowForm(true); setEditId(null); setForm({ name: '', price: 0, category: '' }); }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-bold">
             + Novo Produto
           </button>
@@ -69,10 +71,12 @@ export const ProductsPage = ({ userId, savedProducts, onBack, onUpdateProducts }
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl" onClick={e => e.stopPropagation()}>
               <h3 className="font-bold text-lg mb-4 dark:text-white">{editId ? 'Editar' : 'Novo'} Produto</h3>
               <div className="space-y-3">
-                <input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                   placeholder="Nome do produto" className="w-full bg-slate-50 dark:bg-slate-700 border rounded-lg p-3 text-sm dark:text-white outline-none focus:border-blue-500" />
-                <input type="number" value={form.unitPrice || ''} onChange={e => setForm(p => ({ ...p, unitPrice: Number(e.target.value) }))}
+                <input type="number" value={form.price || ''} onChange={e => setForm(p => ({ ...p, price: Number(e.target.value) }))}
                   placeholder="Preço" className="w-full bg-slate-50 dark:bg-slate-700 border rounded-lg p-3 text-sm dark:text-white outline-none focus:border-blue-500" />
+                <input value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                  placeholder="Categoria (opcional)" className="w-full bg-slate-50 dark:bg-slate-700 border rounded-lg p-3 text-sm dark:text-white outline-none focus:border-blue-500" />
               </div>
               <div className="flex gap-3 mt-6">
                 <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm font-medium dark:text-white">Cancelar</button>
@@ -92,18 +96,18 @@ export const ProductsPage = ({ userId, savedProducts, onBack, onUpdateProducts }
           </div>
         ) : (
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-            {filtered.map((p, i) => (
-              <div key={i} className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+            {filtered.map(p => (
+              <div key={p.id} className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                 <div>
-                  <p className="font-medium text-sm dark:text-white">{p.description}</p>
-                  <p className="text-xs text-slate-400">{p.unitPrice.toLocaleString()} MT</p>
+                  <p className="font-medium text-sm dark:text-white">{p.name}</p>
+                  <p className="text-xs text-slate-400">{p.price.toLocaleString()} MT {p.category ? `· ${p.category}` : ''}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleEdit(p as SavedProduct & { id?: number })}
+                  <button onClick={() => handleEdit(p)}
                     className="px-3 py-1.5 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition">
                     <i className="fa-solid fa-pen mr-1"></i>Editar
                   </button>
-                  <button onClick={() => handleDelete(String((p as { id?: number }).id ?? ''))}
+                  <button onClick={() => handleDelete(p.id)}
                     className="px-3 py-1.5 text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 transition">
                     <i className="fa-solid fa-trash mr-1"></i>Excluir
                   </button>

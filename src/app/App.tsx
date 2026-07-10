@@ -218,8 +218,7 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
           onUpdateProducts={setSavedProducts} />
       )}
       {currentView === 'products' && (
-        <ProductsPage userId={userId} savedProducts={savedProducts} onBack={() => setCurrentView('home')}
-          onUpdateProducts={setSavedProducts} />
+        <ProductsPage userId={userId} onBack={() => setCurrentView('home')} />
       )}
       {currentView === 'clients' && (
         <ClientsPage userId={userId} savedClients={savedClients} onBack={() => setCurrentView('home')}
