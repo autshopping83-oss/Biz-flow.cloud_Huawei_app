@@ -20,12 +20,14 @@ interface DashboardProps {
   showInstallButton?: boolean;
   onViewProducts?: () => void;
   onViewClients?: () => void;
+  onSync?: () => void;
+  syncing?: boolean;
 }
 
 type DashTab = 'OVERVIEW' | 'FINANCE';
 
 export const Dashboard: React.FC<DashboardProps> = ({
-  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, onDeleteDocument, onInstallApp, showInstallButton, onViewProducts, onViewClients
+  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, onDeleteDocument, onInstallApp, showInstallButton, onViewProducts, onViewClients, onSync, syncing
 }) => {
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -114,6 +116,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </button>
             
             <div className="border-t border-slate-100 dark:border-slate-800 my-4 mx-2"></div>
+
+            {onSync && (
+              <button onClick={() => { setIsMenuOpen(false); onSync(); }} disabled={syncing}
+                className="w-full text-left px-5 py-3.5 rounded-xl font-medium flex items-center gap-4 border transition-all bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50">
+                <i className={`fa-solid ${syncing ? 'fa-spinner animate-spin' : 'fa-cloud-arrow-up'} text-blue-500 w-5 text-center`}></i>
+                {syncing ? 'A sincronizar...' : 'Sincronizar com a Nuvem'}
+              </button>
+            )}
 
             <button onClick={onToggleTheme} className="w-full text-left px-5 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-4 transition-colors">
                  <i className={`fa-solid ${companySettings.theme === 'dark' ? 'fa-sun' : 'fa-moon'} text-slate-400 w-5 text-center`}></i> {companySettings.theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}

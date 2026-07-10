@@ -190,6 +190,12 @@ export const saveReceipt = async (receipt: ReceiptData, userId: string): Promise
 
     await learnClient(receipt, userId);
     await learnProducts(receipt, userId);
+
+    // Sync to Supabase (silencioso)
+    if (userId !== 'local') {
+      const { syncSingleDocument } = await import('./syncService');
+      syncSingleDocument({ ...receipt, userId }).catch(() => {});
+    }
     
     return await getHistory(userId);
   } catch (e) {

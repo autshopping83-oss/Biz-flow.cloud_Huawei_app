@@ -38,6 +38,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
       loadingRef.current = false;
       setState({ user: session?.user ?? null, loading: false });
+
+      // Sync profile to Supabase on sign in
+      if (event === 'SIGNED_IN' && session?.user) {
+        syncProfile(session.user).catch(() => {});
+      }
     });
 
     // Fallback: se onAuthStateChange não disparar SIGNED_IN (ex: rede),
@@ -103,6 +108,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       provider: 'google',
       options: { redirectTo: window.location.origin },
     });
+  };
+
+  const syncProfile = async (user: User) => {
+    const { error } = await supabase.from('profiles').upsert({
+      id: user.id,
+      email: user.email,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+    if (error) console.warn('Profile sync error:', error.message);
   };
 
   return (

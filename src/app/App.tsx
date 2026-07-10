@@ -64,6 +64,7 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
   const [installPrompt, setInstallPrompt] = useState<Window['deferredPrompt']>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
   
   // Version tracking - force rebuild
   console.debug('BizFlow version:', V);
@@ -111,6 +112,24 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     setCurrentView('client-history');
   };
 
+  const handleSync = async () => {
+    if (syncing || userId === 'local') return;
+    setSyncing(true);
+    try {
+      const { syncToSupabase } = await import('../services/syncService');
+      const result = await syncToSupabase(userId);
+      if (result.errors.length > 0) {
+        notify(`Sincronizado com alguns erros: ${result.errors.join(', ')}`, 'error');
+      } else {
+        notify(`Sincronizado! ${result.documents} docs, ${result.clients} clientes, ${result.products} produtos`, 'success');
+      }
+    } catch (e) {
+      notify('Erro ao sincronizar: ' + (e as Error).message, 'error');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const toggleTheme = () => {
     const newTheme = companySettings.theme === 'dark' ? 'light' : 'dark';
     setCompanySettings(p => ({ ...p, theme: newTheme }));
@@ -138,7 +157,8 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
           onViewHistory={() => setCurrentView('history')} onToggleTheme={toggleTheme}
           t={t} userId={userId} onDeleteDocument={editor.handleDeleteDocument}
           onInstallApp={handleInstallApp} showInstallButton={!!installPrompt}
-          onViewProducts={() => setCurrentView('products')} onViewClients={() => setCurrentView('clients')} />
+          onViewProducts={() => setCurrentView('products')} onViewClients={() => setCurrentView('clients')}
+          onSync={handleSync} syncing={syncing} />
       )}
       {currentView === 'history' && (
         <HistoryPage history={history} onBack={() => setCurrentView('home')}
