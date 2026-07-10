@@ -188,5 +188,6 @@ export const useDocumentActions = ({
     handleGeneratePDF,
     handleShareWhatsApp,
     handlePrintThermal,
+    generatePDFBlob,
   };
 };

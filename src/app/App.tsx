@@ -195,7 +195,8 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
         <DocumentShareModal formData={editor.formData} companySettings={companySettings} userId={userId}
           isGeneratingPdf={editor.isGeneratingPdf} isPrinting={editor.isPrinting}
           onGeneratePDF={editor.handleGeneratePDF} onPrintThermal={editor.handlePrintThermal}
-          onClose={() => editor.setShowShareModal(false)} t={t} fMoney={fMoney} />
+          onClose={() => editor.setShowShareModal(false)} t={t} fMoney={fMoney}
+          onGetPdfBlob={editor.generatePDFBlob} />
       )}
       {editor.showSignatureModal && (
         <SignatureModal canvasRef={editor.canvasRef} onSave={editor.saveSignature}

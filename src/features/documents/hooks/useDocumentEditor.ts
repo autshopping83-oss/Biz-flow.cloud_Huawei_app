@@ -44,7 +44,7 @@ export function useDocumentEditor({
 
   const { canvasRef, clearCanvas, getCanvasDataUrl } = useSignatureCanvas(showSignatureModal);
 
-  const { isGeneratingPdf, isSharing, isPrinting, localDirHandle, requestFolderPermission, handleGeneratePDF, handleShareWhatsApp, handlePrintThermal } = useDocumentActions({
+  const { isGeneratingPdf, isSharing, isPrinting, localDirHandle, requestFolderPermission, handleGeneratePDF, handleShareWhatsApp, handlePrintThermal, generatePDFBlob } = useDocumentActions({
     formData,
     receiptRef,
     ghostReceiptRef,
@@ -159,7 +159,7 @@ export function useDocumentEditor({
     showSignatureModal, showShareModal,
     receiptRef, ghostReceiptRef, thermalReceiptRef, canvasRef,
     isGeneratingPdf, isSharing, isPrinting, localDirHandle,
-    requestFolderPermission, handleGeneratePDF, handleShareWhatsApp, handlePrintThermal,
+    requestFolderPermission, handleGeneratePDF, handleShareWhatsApp, handlePrintThermal, generatePDFBlob,
     setMobileTab, setShowSignatureModal, setShowShareModal,
     initNewDocument, handleDuplicateDocument,
     handleFormDataChange, handleNewItemChange, handleAddItem, handleRemoveItem,
