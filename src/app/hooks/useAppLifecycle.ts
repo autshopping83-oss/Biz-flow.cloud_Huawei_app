@@ -3,6 +3,7 @@ import { getDirectoryHandle, getHistory, getSavedClients, getSavedProducts, getC
 import { CompanySettings, ReceiptData, SavedClient, SavedProduct } from '../../types';
 
 interface UseAppLifecycleParams {
+  userId: string;
   currentView: string;
   isGuest: boolean;
   setCurrentView: (view: string) => void;
@@ -17,6 +18,7 @@ interface UseAppLifecycleParams {
 }
 
 export const useAppLifecycle = ({
+  userId,
   currentView,
   isGuest,
   setCurrentView,
@@ -67,7 +69,7 @@ export const useAppLifecycle = ({
       setIsGuest(false);
       
       // Load settings from local storage
-      const localSettings = await getCompanySettings('local');
+      const localSettings = await getCompanySettings(userId);
       if (localSettings) {
         setCompanySettings(prev => ({ ...prev, ...localSettings, plan: 'PRO' }));
         
@@ -87,10 +89,10 @@ export const useAppLifecycle = ({
       }
 
       // Load history, clients, products from local storage
-      const hist = await getHistory('local');
+      const hist = await getHistory(userId);
       setHistory(hist);
-      setSavedClients(await getSavedClients('local'));
-      setSavedProducts(await getSavedProducts('local'));
+      setSavedClients(await getSavedClients(userId));
+      setSavedProducts(await getSavedProducts(userId));
 
       // Navigate to home if on loading screen
       if (['loading', 'login', 'register', 'forgotPassword'].includes(currentView)) {

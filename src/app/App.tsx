@@ -10,6 +10,8 @@ import { ReceiptData, CompanySettings, SavedClient, SavedProduct } from '../type
 import { Logo } from '../components/Logo';
 import { V } from '../_cachebuster/version';
 import { useToast } from '../components/ToastContext';
+import { useAuth } from '../features/auth/AuthContext';
+import { AuthGuard } from '../features/auth/AuthGuard';
 import { useAppLifecycle } from './hooks/useAppLifecycle';
 import { useDocumentEditor } from '../features/documents/hooks/useDocumentEditor';
 import { getTranslation, formatMoney } from '../services/translationService';
@@ -45,6 +47,9 @@ const DefaultSettings: CompanySettings = {
 type AppView = 'loading' | 'home' | 'history' | 'app';
 
 const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
+  const { user, signOut } = useAuth();
+  const userId = user?.id ?? 'local';
+
   const [currentView, setCurrentView] = useState<AppView>('loading');
   const [isGuest, setIsGuest] = useState(false);
   const [history, setHistory] = useState<ReceiptData[]>([]);
@@ -63,13 +68,13 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
   const fMoney = (val: number) => formatMoney(val, companySettings.currency, companySettings.language);
 
   useAppLifecycle({
-    currentView, isGuest, setCurrentView: (v: string) => setCurrentView(v as AppView), setIsGuest,
+    userId, currentView, isGuest, setCurrentView: (v: string) => setCurrentView(v as AppView), setIsGuest,
     setHistory, setSavedClients, setSavedProducts, setCompanySettings,
     setIsOnline, setLocalDirHandle: () => {}, onReady,
   });
 
   const editor = useDocumentEditor({
-    isGuest, history, companySettings,
+    userId, isGuest, history, companySettings,
     setHistory, setCurrentView: (v: string) => setCurrentView(v as AppView), notify,
   });
 
@@ -91,15 +96,16 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
   };
 
   return (
+    <AuthGuard>
     <Suspense fallback={<PageLoader />}>
       {currentView === 'loading' && <PageLoader />}
       {currentView === 'home' && (
         <Dashboard history={history} companySettings={companySettings}
-          onLogout={() => { setIsGuest(false); setCurrentView('loading'); }}
+          onLogout={async () => { await signOut(); setCurrentView('loading'); }}
           onNewDocument={editor.initNewDocument} onOpenSettings={() => setShowSettingsModal(true)}
           onLoadDocument={(doc) => { editor.setFormData(doc); setCurrentView('app'); editor.setMobileTab('preview'); }}
           onViewHistory={() => setCurrentView('history')} onToggleTheme={toggleTheme}
-          t={t} userId="local" onDeleteDocument={editor.handleDeleteDocument}
+          t={t} userId={userId} onDeleteDocument={editor.handleDeleteDocument}
           onInstallApp={handleInstallApp} showInstallButton={!!installPrompt} />
       )}
       {currentView === 'history' && (
@@ -123,7 +129,7 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
           onAddItem={editor.handleAddItem} onRemoveItem={editor.handleRemoveItem}
           onEnhanceDescription={editor.handleEnhanceDescription} onInitNew={editor.initNewDocument}
           onSign={() => editor.setShowSignatureModal(true)} onClearClient={editor.handleClearClient}
-          onThemeChange={editor.handleThemeChange} userId="local" />
+          onThemeChange={editor.handleThemeChange} userId={userId} />
       )}
       {showSettingsModal && (
         <SettingsModal companySettings={companySettings} onClose={() => setShowSettingsModal(false)}
@@ -131,13 +137,13 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
           onLogoChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onloadend = () => setCompanySettings(p => ({ ...p, logo: r.result as string })); r.readAsDataURL(f); }}
           onStampUpload={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onloadend = () => setCompanySettings(p => ({ ...p, customStamp: r.result as string })); r.readAsDataURL(f); }}
           onRequestFolderPermission={async () => { await editor.requestFolderPermission(); }}
-          onSaveSettings={async () => { const { saveCompanySettings } = await import('../services/storageService'); await saveCompanySettings(companySettings, 'local'); notify('Definições guardadas!', 'success'); setShowSettingsModal(false); }}
+          onSaveSettings={async () => { const { saveCompanySettings } = await import('../services/storageService'); await saveCompanySettings(companySettings, userId); notify('Definições guardadas!', 'success'); setShowSettingsModal(false); }}
           isSavingSettings={false} localDirHandle={editor.localDirHandle}
           onSaveSignature={() => {}} onClearSignature={() => {}} settingsSignatureCanvasRef={null as unknown as React.RefObject<HTMLCanvasElement | null>}
           handleSettingsSignatureStartDrawing={() => {}} handleSettingsSignatureDraw={() => {}} handleSettingsSignatureStopDrawing={() => {}} />
       )}
       {editor.showShareModal && (
-        <DocumentShareModal formData={editor.formData} companySettings={companySettings} userId="local"
+        <DocumentShareModal formData={editor.formData} companySettings={companySettings} userId={userId}
           isGeneratingPdf={editor.isGeneratingPdf} isPrinting={editor.isPrinting}
           onGeneratePDF={editor.handleGeneratePDF} onPrintThermal={editor.handlePrintThermal}
           onClose={() => editor.setShowShareModal(false)} t={t} fMoney={fMoney} />
@@ -147,6 +153,7 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
           onClear={editor.clearSignature} onClose={() => editor.setShowSignatureModal(false)} />
       )}
     </Suspense>
+    </AuthGuard>
   );
 };
 
