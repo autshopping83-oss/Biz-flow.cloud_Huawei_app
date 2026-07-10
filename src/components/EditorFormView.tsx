@@ -34,6 +34,7 @@ interface EditorFormViewProps {
   onSendEmail: () => void;
   setShowSaveProductModal: (show: boolean) => void;
   onViewClientHistory?: (clientName: string) => void;
+  catalogProducts?: Product[];
 }
 
 interface SectionProps {
@@ -84,6 +85,7 @@ export const EditorFormView: React.FC<EditorFormViewProps> = ({
   onSendWhatsApp, onSendEmail,
   setShowSaveProductModal,
   onViewClientHistory,
+  catalogProducts,
 }) => (
   <div className="space-y-6 animate-slideUp">
     {/* Type Switcher */}
@@ -195,6 +197,21 @@ export const EditorFormView: React.FC<EditorFormViewProps> = ({
               <option value="" disabled>-- Selecionar produto do catálogo --</option>
               {savedProducts.map((p, i) => (
                 <option key={i} value={i}>{p.description} — {p.unitPrice.toLocaleString()} MT</option>
+              ))}
+            </select>
+          </div>
+        )}
+        {catalogProducts && catalogProducts.length > 0 && (
+          <div className="mb-3">
+            <select onChange={(e) => {
+              const p = catalogProducts[Number(e.target.value)];
+              if (!p) return;
+              onNewItemChange({ target: { name: 'description', value: p.name } } as React.ChangeEvent<HTMLInputElement>);
+              onNewItemChange({ target: { name: 'unitPrice', value: String(p.price) } } as React.ChangeEvent<HTMLInputElement>);
+            }} defaultValue="" className="w-full bg-white dark:bg-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500">
+              <option value="" disabled>-- Selecionar produto registado --</option>
+              {catalogProducts.map((p, i) => (
+                <option key={p.id} value={i}>{p.name} — {p.price.toLocaleString()} MT {p.category ? `(${p.category})` : ''}</option>
               ))}
             </select>
           </div>

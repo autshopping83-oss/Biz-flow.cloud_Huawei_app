@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ReceiptData, LineItem, DocumentType, SavedClient, SavedProduct, Product } from '../types';
-import { addProduct } from '../services/storageService';
+import { addProduct, getProducts } from '../services/storageService';
 import { useToast } from './ToastContext';
 import { EditorFormView } from './EditorFormView';
 
@@ -39,7 +39,13 @@ export const EditorForm: React.FC<EditorFormProps> = (props) => {
   const [pendingItem, setPendingItem] = React.useState<Partial<LineItem> | null>(null);
   const [isSavingProduct, setIsSavingProduct] = React.useState(false);
   const [selectedCatalogProduct, setSelectedCatalogProduct] = React.useState<Product | null>(null);
+  const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
   const { notify } = useToast();
+
+  // Load catalog products
+  useEffect(() => {
+    if (userId) getProducts(userId).then(setCatalogProducts).catch(() => {});
+  }, [userId]);
 
   const handleProductSelect = (product: Product) => {
     onNewItemChange({ target: { name: 'description', value: product.name } } as React.ChangeEvent<HTMLInputElement>);
@@ -127,6 +133,7 @@ export const EditorForm: React.FC<EditorFormProps> = (props) => {
     setShowSaveProductModal,
     onViewClientHistory: props.onViewClientHistory,
     onUpdateProducts: props.onUpdateProducts,
+    catalogProducts,
   };
 
   return <EditorFormView {...viewProps} />;
