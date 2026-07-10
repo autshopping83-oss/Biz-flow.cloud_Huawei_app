@@ -28,7 +28,7 @@ export const DocumentShareModal: React.FC<DocumentShareModalProps> = ({
   const [selectedMethod, setSelectedMethod] = useState<ShareMethod>(null);
   const [recipientEmail, setRecipientEmail] = useState(formData.clientContact || '');
   const [recipientName, setRecipientName] = useState(formData.clientName || '');
-  const [recipientPhone, setRecipientPhone] = useState(formData.clientContact || '');
+  const [recipientPhone, setRecipientPhone] = useState(formData.clientWhatsApp || formData.clientContact || '');
   const [isSending, setIsSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
 

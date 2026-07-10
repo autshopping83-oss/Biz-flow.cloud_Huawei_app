@@ -96,13 +96,16 @@ export const EditorForm: React.FC<EditorFormProps> = (props) => {
   };
 
   const handleSendWhatsApp = async () => {
-    if (!formData.clientContact) { notify("Adicione um contacto do cliente primeiro", "error"); return; }
-    notify("Use o botão de partilha do navegador para enviar via WhatsApp", "info");
+    if (!formData.clientWhatsApp && !formData.clientContact) {
+      notify("Adicione o WhatsApp do cliente nos campos acima", "error");
+      return;
+    }
+    notify("Use o botão 'Compartilhar' no topo para enviar o PDF via WhatsApp", "info");
   };
 
   const handleSendEmail = async () => {
     if (!formData.clientContact) { notify("Adicione um email do cliente primeiro", "error"); return; }
-    notify("Use o botão de partilha do navegador para enviar via Email", "info");
+    notify("Use o botão 'Compartilhar' no topo para enviar", "info");
   };
 
   const viewProps = {

@@ -136,10 +136,13 @@ export const EditorFormView: React.FC<EditorFormViewProps> = ({
       <Input name="clientName" value={formData.clientName} onChange={onChange} placeholder="Nome do Cliente / Empresa" list="client-list" autoComplete="off" icon="fa-magnifying-glass" />
       <datalist id="client-list">{savedClients.map((c, i) => <option key={i} value={c.name} />)}</datalist>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Input name="clientContact" value={formData.clientContact} onChange={onChange} placeholder="Email / Telefone" icon="fa-address-book" />
-        <Input name="clientNuit" value={formData.clientNuit} onChange={onChange} placeholder="Tax ID / Reg. No." icon="fa-id-card" />
+        <Input name="clientContact" value={formData.clientContact} onChange={onChange} placeholder="Email do Cliente" icon="fa-envelope" />
+        <Input name="clientWhatsApp" value={formData.clientWhatsApp || ''} onChange={onChange} placeholder="WhatsApp do Cliente" icon="fa-phone" />
       </div>
-      <Input name="clientLocation" value={formData.clientLocation} onChange={onChange} placeholder="Endereço / Cidade" icon="fa-location-dot" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input name="clientNuit" value={formData.clientNuit} onChange={onChange} placeholder="NUIT / Contribuinte" icon="fa-id-card" />
+        <Input name="clientLocation" value={formData.clientLocation} onChange={onChange} placeholder="Endereço / Cidade" icon="fa-location-dot" />
+      </div>
     </Section>
 
     {/* Items */}

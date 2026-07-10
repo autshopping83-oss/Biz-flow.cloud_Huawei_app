@@ -22,6 +22,7 @@ export interface ReceiptData {
   // Client Info
   clientName: string;
   clientContact: string;
+  clientWhatsApp?: string;
   clientLocation: string;
   clientNuit: string;
   
@@ -71,6 +72,8 @@ export interface CompanySettings {
   isAdmin?: boolean;
   customStamp?: string;
   signature?: string;
+  userPhone?: string;
+  userEmail?: string;
 }
 
 export interface Comment {
