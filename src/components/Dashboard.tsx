@@ -25,7 +25,7 @@ interface DashboardProps {
 type DashTab = 'OVERVIEW' | 'FINANCE';
 
 export const Dashboard: React.FC<DashboardProps> = ({
-  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, onDeleteDocument, onInstallApp, showInstallButton
+  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, onDeleteDocument, onInstallApp, showInstallButton, onViewProducts, onViewClients
 }) => {
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
