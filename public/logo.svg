@@ -1,0 +1,28 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bizflow_grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Fundo Quadrado Arredondado -->
+  <rect x="0" y="0" width="512" height="512" rx="120" fill="url(#bizflow_grad)" />
+  
+  <!-- Linhas do Recibo -->
+  <!-- Linha 1 -->
+  <path d="M110 160 H 402" stroke="white" stroke-width="45" stroke-linecap="round" />
+  <!-- Linha 2 -->
+  <path d="M110 266 H 402" stroke="white" stroke-width="45" stroke-linecap="round" opacity="0.85" />
+  <!-- Linha 3 (Mais curta para dar espaço ao círculo) -->
+  <path d="M110 372 H 260" stroke="white" stroke-width="45" stroke-linecap="round" opacity="0.7" />
+  
+  <!-- Círculo Branco no canto inferior direito -->
+  <circle cx="382" cy="382" r="90" fill="white" />
+  
+  <!-- Seta Azul apontando para cima (Export/Send) -->
+  <g transform="translate(382, 382) scale(0.9)">
+    <path d="M-25 25 L35 -35" stroke="#2563EB" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M-15 -35 H35 V15" stroke="#2563EB" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>
