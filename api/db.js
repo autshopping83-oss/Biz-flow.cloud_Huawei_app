@@ -1,8 +1,12 @@
 // api/db.js — Conexao PostgreSQL via Supabase
 import pg from 'pg';
 
+const connectionString = process.env.bizflowcloud_POSTGRES_URL
+  || process.env.DATABASE_URL
+  || process.env.POSTGRES_URL;
+
 const pool = new pg.Pool({
-  connectionString: process.env.bizflowcloud_POSTGRES_URL || process.env.DATABASE_URL,
+  connectionString,
   ssl: { rejectUnauthorized: false },
 });
 
