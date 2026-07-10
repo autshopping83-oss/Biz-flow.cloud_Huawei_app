@@ -28,15 +28,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<AuthState>({ user: null, loading: true });
 
   useEffect(() => {
+    let cancelled = false;
+
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState({ user: session?.user ?? null, loading: false });
+      if (!cancelled) setState({ user: session?.user ?? null, loading: false });
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setState({ user: session?.user ?? null, loading: false });
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (!cancelled) setState({ user: session?.user ?? null, loading: false });
+      })
+      .catch(() => {
+        if (!cancelled) setState({ user: null, loading: false });
+      });
 
-    return () => listener?.subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      listener?.subscription.unsubscribe();
+    };
   }, []);
 
   const extractError = (error: AuthError) => {

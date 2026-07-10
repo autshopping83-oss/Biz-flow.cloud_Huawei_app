@@ -32,17 +32,15 @@ export const useAppLifecycle = ({
   onReady,
 }: UseAppLifecycleParams) => {
   const initializingRef = useRef(false);
+  const onReadyCalledRef = useRef(false);
 
+  // Setup side effects once (listeners, etc.)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const view = params.get('view');
-
     if (view === 'updatePassword') {
       setCurrentView('updatePassword');
     }
-
-    // Load local data on mount
-    loadLocalData();
 
     getDirectoryHandle().then(handle => {
       if (handle) setLocalDirHandle(handle);
@@ -53,13 +51,17 @@ export const useAppLifecycle = ({
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    onReady?.();
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load data when userId changes (first load and after login)
+  useEffect(() => {
+    if (!userId) return;
+    loadLocalData();
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadLocalData = async () => {
     if (initializingRef.current) return;
@@ -97,6 +99,11 @@ export const useAppLifecycle = ({
       // Navigate to home if on loading screen
       if (['loading', 'login', 'register', 'forgotPassword'].includes(currentView)) {
         setCurrentView('home');
+      }
+
+      if (!onReadyCalledRef.current) {
+        onReadyCalledRef.current = true;
+        onReady?.();
       }
     } catch (error) {
       console.error('loadLocalData error:', error);
