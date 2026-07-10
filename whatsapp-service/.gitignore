@@ -1,0 +1,4 @@
+node_modules/
+sessao_whatsapp/
+.env
+*.pdf
