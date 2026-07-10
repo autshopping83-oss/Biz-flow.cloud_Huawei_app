@@ -25,13 +25,14 @@ export interface EditorFormProps {
   userId?: string;
   onThemeChange?: (theme: 'color' | 'bw') => void;
   onViewClientHistory?: (clientName: string) => void;
+  onUpdateProducts?: (products: SavedProduct[]) => void;
 }
 
 export const EditorForm: React.FC<EditorFormProps> = (props) => {
   const {
     formData, onChange, newItem, onNewItemChange, onAddItem, onRemoveItem,
     onEnhanceDescription, isEnhancing, t, fMoney, onInitNew, onSign, statusOptions, onClearClient,
-    savedClients, savedProducts, onConvertQuote, userId, onThemeChange
+    savedClients, savedProducts, onConvertQuote, userId, onThemeChange, onViewClientHistory, onUpdateProducts,
   } = props;
 
   const [showSaveProductModal, setShowSaveProductModal] = React.useState(false);
@@ -65,6 +66,12 @@ export const EditorForm: React.FC<EditorFormProps> = (props) => {
         userId,
         category: ''
       });
+      // Refresh saved products
+      if (onUpdateProducts) {
+        const { getSavedProducts } = await import('../services/storageService');
+        const updated = await getSavedProducts(userId);
+        onUpdateProducts(updated);
+      }
       notify(`Produto "${pendingItem.description}" salvo no catálogo`, 'success');
       setShowSaveProductModal(false);
       setPendingItem(null);
@@ -119,6 +126,7 @@ export const EditorForm: React.FC<EditorFormProps> = (props) => {
     onSendWhatsApp: handleSendWhatsApp, onSendEmail: handleSendEmail,
     setShowSaveProductModal,
     onViewClientHistory: props.onViewClientHistory,
+    onUpdateProducts: props.onUpdateProducts,
   };
 
   return <EditorFormView {...viewProps} />;

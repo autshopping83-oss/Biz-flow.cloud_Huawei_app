@@ -101,19 +101,29 @@ export function useDocumentEditor({
     setNewItem(p => ({ ...p, [name]: value }));
   };
 
+  const recalcular = (items: LineItem[], taxRate: number, discount: number) => {
+    const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+    const taxAmount = taxRate > 0 ? subtotal * (taxRate / 100) : 0;
+    const total = subtotal + taxAmount - discount;
+    return { subtotal, taxAmount, total };
+  };
+
   const handleAddItem = () => {
     if (!newItem.description) return;
     const q = Number(newItem.quantity) || 1;
     const p = Number(newItem.unitPrice) || 0;
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, { id: crypto.randomUUID(), description: newItem.description!, quantity: q, unitPrice: p, total: q * p }],
-    }));
+    setFormData(prev => {
+      const items = [...prev.items, { id: crypto.randomUUID(), description: newItem.description!, quantity: q, unitPrice: p, total: q * p }];
+      return { ...prev, items, ...recalcular(items, prev.taxRate, prev.discount) };
+    });
     setNewItem({ description: '', quantity: 1, unitPrice: 0 });
   };
 
   const handleRemoveItem = (id: string) => {
-    setFormData(p => ({ ...p, items: p.items.filter(i => i.id !== id) }));
+    setFormData(prev => {
+      const items = prev.items.filter(i => i.id !== id);
+      return { ...prev, items, ...recalcular(items, prev.taxRate, prev.discount) };
+    });
   };
 
   const handleEnhanceDescription = async () => {

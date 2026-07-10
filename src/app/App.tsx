@@ -214,7 +214,8 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
           onEnhanceDescription={editor.handleEnhanceDescription} onInitNew={editor.initNewDocument}
           onSign={() => editor.setShowSignatureModal(true)} onClearClient={editor.handleClearClient}
           onThemeChange={editor.handleThemeChange} userId={userId}
-          onViewClientHistory={handleViewClientHistory} />
+          onViewClientHistory={handleViewClientHistory}
+          onUpdateProducts={setSavedProducts} />
       )}
       {currentView === 'products' && (
         <ProductsPage userId={userId} savedProducts={savedProducts} onBack={() => setCurrentView('home')}

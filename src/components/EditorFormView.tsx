@@ -133,8 +133,25 @@ export const EditorFormView: React.FC<EditorFormViewProps> = ({
         </button>
       </div>
     }>
-      <Input name="clientName" value={formData.clientName} onChange={onChange} placeholder="Nome do Cliente / Empresa" list="client-list" autoComplete="off" icon="fa-magnifying-glass" />
-      <datalist id="client-list">{savedClients.map((c, i) => <option key={i} value={c.name} />)}</datalist>
+      {/* Client dropdown */}
+      {savedClients.length > 0 && (
+        <div className="mb-2">
+          <select onChange={(e) => {
+            const c = savedClients[Number(e.target.value)];
+            if (!c) return;
+            onChange({ target: { name: 'clientName', value: c.name } } as React.ChangeEvent<HTMLInputElement>);
+            onChange({ target: { name: 'clientContact', value: c.contact } } as React.ChangeEvent<HTMLInputElement>);
+            onChange({ target: { name: 'clientNuit', value: c.nuit } } as React.ChangeEvent<HTMLInputElement>);
+            onChange({ target: { name: 'clientLocation', value: c.location } } as React.ChangeEvent<HTMLInputElement>);
+          }} defaultValue="" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-sm dark:text-white outline-none focus:border-blue-500 mb-3">
+            <option value="" disabled>-- Selecionar cliente existente --</option>
+            {savedClients.map((c, i) => (
+              <option key={i} value={i}>{c.name} {c.contact ? `(${c.contact})` : ''}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      <Input name="clientName" value={formData.clientName} onChange={onChange} placeholder="Nome do Cliente / Empresa" icon="fa-magnifying-glass" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input name="clientContact" value={formData.clientContact} onChange={onChange} placeholder="Email do Cliente" icon="fa-envelope" />
         <Input name="clientWhatsApp" value={formData.clientWhatsApp || ''} onChange={onChange} placeholder="WhatsApp do Cliente" icon="fa-phone" />
@@ -166,6 +183,22 @@ export const EditorFormView: React.FC<EditorFormViewProps> = ({
       </div>
 
       <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mt-4 shadow-sm">
+        {/* Product dropdown */}
+        {savedProducts.length > 0 && (
+          <div className="mb-3">
+            <select onChange={(e) => {
+              const p = savedProducts[Number(e.target.value)];
+              if (!p) return;
+              onNewItemChange({ target: { name: 'description', value: p.description } } as React.ChangeEvent<HTMLInputElement>);
+              onNewItemChange({ target: { name: 'unitPrice', value: String(p.unitPrice) } } as React.ChangeEvent<HTMLInputElement>);
+            }} defaultValue="" className="w-full bg-white dark:bg-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500">
+              <option value="" disabled>-- Selecionar produto do catálogo --</option>
+              {savedProducts.map((p, i) => (
+                <option key={i} value={i}>{p.description} — {p.unitPrice.toLocaleString()} MT</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="flex gap-2 mb-3">
           <div className="flex-1">
             <input name="description" value={newItem.description} onChange={onNewItemChange}
