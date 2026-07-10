@@ -132,10 +132,12 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     }
   };
 
+  const EMAIL_SERVICE_URL = import.meta.env.VITE_EMAIL_SERVICE_URL || 'http://localhost:3002';
+
   const verificarGmail = async () => {
     if (userId === 'local') return;
     try {
-      const res = await fetch(`http://localhost:3002/auth/status?userId=${userId}`);
+      const res = await fetch(`${EMAIL_SERVICE_URL}/auth/status?userId=${userId}`);
       const data = await res.json();
       if (data.conectado) {
         setGmailConectado(true);
@@ -145,7 +147,7 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
   };
 
   const handleConectarGmail = () => {
-    window.open(`http://localhost:3002/auth/url?userId=${userId}`, '_blank');
+    window.open(`${EMAIL_SERVICE_URL}/auth/url?userId=${userId}`, '_blank');
     notify('Aguardando autorizacao do Gmail... Apos autorizar, volte a esta pagina.', 'info');
   };
 
