@@ -5,7 +5,7 @@
  * v4: Web PWA pura - sem Supabase, sem Android, sem APIs externas
  */
 
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { ReceiptData, CompanySettings, SavedClient, SavedProduct } from '../types';
 import { Logo } from '../components/Logo';
 import { V } from '../_cachebuster/version';
@@ -65,6 +65,8 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [gmailConectado, setGmailConectado] = useState(false);
+  const [gmailEmail, setGmailEmail] = useState('');
   
   // Version tracking - force rebuild
   console.debug('BizFlow version:', V);
@@ -129,6 +131,26 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
       setSyncing(false);
     }
   };
+
+  const verificarGmail = async () => {
+    if (userId === 'local') return;
+    try {
+      const res = await fetch(`http://localhost:3002/auth/status?userId=${userId}`);
+      const data = await res.json();
+      if (data.conectado) {
+        setGmailConectado(true);
+        setGmailEmail(data.email || '');
+      }
+    } catch {} // Silencioso — servico pode nao estar rodando
+  };
+
+  const handleConectarGmail = () => {
+    window.open(`http://localhost:3002/auth/url?userId=${userId}`, '_blank');
+    notify('Aguardando autorizacao do Gmail... Apos autorizar, volte a esta pagina.', 'info');
+  };
+
+  // Verificar Gmail ao montar
+  useEffect(() => { verificarGmail(); }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleTheme = () => {
     const newTheme = companySettings.theme === 'dark' ? 'light' : 'dark';
@@ -209,7 +231,8 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
           settingsSignatureCanvasRef={settingsCanvasRef as React.RefObject<HTMLCanvasElement | null>}
           handleSettingsSignatureStartDrawing={settingsSignature.handleSettingsSignatureStartDrawing as unknown as (e: MouseEvent | TouchEvent) => void}
           handleSettingsSignatureDraw={settingsSignature.handleSettingsSignatureDraw as unknown as (e: MouseEvent | TouchEvent) => void}
-          handleSettingsSignatureStopDrawing={settingsSignature.handleSettingsSignatureStopDrawing} />
+          handleSettingsSignatureStopDrawing={settingsSignature.handleSettingsSignatureStopDrawing}
+          gmailConectado={gmailConectado} gmailEmail={gmailEmail} onConectarGmail={handleConectarGmail} />
       )}
       {editor.showShareModal && (
         <DocumentShareModal formData={editor.formData} companySettings={companySettings} userId={userId}
