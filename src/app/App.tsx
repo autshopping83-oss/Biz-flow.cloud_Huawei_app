@@ -14,11 +14,15 @@ import { useAuth } from '../features/auth/AuthContext';
 import { AuthGuard } from '../features/auth/AuthGuard';
 import { useAppLifecycle } from './hooks/useAppLifecycle';
 import { useDocumentEditor } from '../features/documents/hooks/useDocumentEditor';
+import { useSignatureCanvas } from './hooks/useSignatureCanvas';
 import { getTranslation, formatMoney } from '../services/translationService';
 import { AppEditorView } from './views/AppEditorView';
 import { SignatureModal } from '../features/documents/components/SignatureModal';
 import { DocumentShareModal } from '../components/DocumentShareModal';
 import { SettingsModal } from '../components/SettingsModal';
+import { ProductsPage } from '../features/products/ProductsPage';
+import { ClientsPage } from '../features/clients/ClientsPage';
+import { ClientHistory } from '../features/clients/ClientHistory';
 
 const Dashboard = lazy(() => import('../components/Dashboard').then(m => ({ default: m.Dashboard })));
 const HistoryPage = lazy(() => import('../components/HistoryPage').then(m => ({ default: m.HistoryPage })));
@@ -44,7 +48,7 @@ const DefaultSettings: CompanySettings = {
   theme: 'light', plan: 'PRO', isAdmin: false,
 };
 
-type AppView = 'loading' | 'home' | 'history' | 'app';
+type AppView = 'loading' | 'home' | 'history' | 'app' | 'products' | 'clients' | 'client-history';
 
 const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
   const { user, signOut } = useAuth();
@@ -59,6 +63,7 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [installPrompt, setInstallPrompt] = useState<Window['deferredPrompt']>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   
   // Version tracking - force rebuild
   console.debug('BizFlow version:', V);
@@ -78,16 +83,42 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
     setHistory, setCurrentView: (v: string) => setCurrentView(v as AppView), notify,
   });
 
+  const settingsSignature = useSignatureCanvas(false);
+  const settingsCanvasRef = settingsSignature.settingsSignatureCanvasRef;
+
+  const handleSettingsSaveSignature = () => {
+    const canvas = settingsCanvasRef.current;
+    if (!canvas) return;
+    const blank = document.createElement('canvas');
+    blank.width = canvas.width;
+    blank.height = canvas.height;
+    if (canvas.toDataURL() === blank.toDataURL()) {
+      notify('A assinatura está vazia.', 'info');
+      return;
+    }
+    const dataUrl = canvas.toDataURL('image/png');
+    setCompanySettings(p => ({ ...p, signature: dataUrl }));
+    notify('Assinatura guardada!', 'success');
+  };
+
+  const handleSettingsClearSignature = () => {
+    settingsSignature.clearCanvas(settingsCanvasRef.current);
+    setCompanySettings(p => ({ ...p, signature: undefined }));
+  };
+
+  const handleViewClientHistory = (clientName: string) => {
+    setSelectedClientId(clientName);
+    setCurrentView('client-history');
+  };
+
   const toggleTheme = () => {
     const newTheme = companySettings.theme === 'dark' ? 'light' : 'dark';
     setCompanySettings(p => ({ ...p, theme: newTheme }));
-    // Apply dark class to HTML element
     if (newTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-    // Save to local storage
     localStorage.setItem('bizflow-theme', newTheme);
   };
 
@@ -106,7 +137,8 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
           onLoadDocument={(doc) => { editor.setFormData(doc); setCurrentView('app'); editor.setMobileTab('preview'); }}
           onViewHistory={() => setCurrentView('history')} onToggleTheme={toggleTheme}
           t={t} userId={userId} onDeleteDocument={editor.handleDeleteDocument}
-          onInstallApp={handleInstallApp} showInstallButton={!!installPrompt} />
+          onInstallApp={handleInstallApp} showInstallButton={!!installPrompt}
+          onViewProducts={() => setCurrentView('products')} onViewClients={() => setCurrentView('clients')} />
       )}
       {currentView === 'history' && (
         <HistoryPage history={history} onBack={() => setCurrentView('home')}
@@ -129,7 +161,21 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
           onAddItem={editor.handleAddItem} onRemoveItem={editor.handleRemoveItem}
           onEnhanceDescription={editor.handleEnhanceDescription} onInitNew={editor.initNewDocument}
           onSign={() => editor.setShowSignatureModal(true)} onClearClient={editor.handleClearClient}
-          onThemeChange={editor.handleThemeChange} userId={userId} />
+          onThemeChange={editor.handleThemeChange} userId={userId}
+          onViewClientHistory={handleViewClientHistory} />
+      )}
+      {currentView === 'products' && (
+        <ProductsPage userId={userId} savedProducts={savedProducts} onBack={() => setCurrentView('home')}
+          onUpdateProducts={setSavedProducts} />
+      )}
+      {currentView === 'clients' && (
+        <ClientsPage userId={userId} savedClients={savedClients} onBack={() => setCurrentView('home')}
+          onUpdateClients={setSavedClients} onViewHistory={handleViewClientHistory} />
+      )}
+      {currentView === 'client-history' && selectedClientId && (
+        <ClientHistory clientName={selectedClientId} history={history}
+          onBack={() => setCurrentView('clients')}
+          onLoadDocument={(doc) => { editor.setFormData(doc); setCurrentView('app'); }} />
       )}
       {showSettingsModal && (
         <SettingsModal companySettings={companySettings} onClose={() => setShowSettingsModal(false)}
@@ -139,8 +185,11 @@ const App: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
           onRequestFolderPermission={async () => { await editor.requestFolderPermission(); }}
           onSaveSettings={async () => { const { saveCompanySettings } = await import('../services/storageService'); await saveCompanySettings(companySettings, userId); notify('Definições guardadas!', 'success'); setShowSettingsModal(false); }}
           isSavingSettings={false} localDirHandle={editor.localDirHandle}
-          onSaveSignature={() => {}} onClearSignature={() => {}} settingsSignatureCanvasRef={null as unknown as React.RefObject<HTMLCanvasElement | null>}
-          handleSettingsSignatureStartDrawing={() => {}} handleSettingsSignatureDraw={() => {}} handleSettingsSignatureStopDrawing={() => {}} />
+          onSaveSignature={handleSettingsSaveSignature} onClearSignature={handleSettingsClearSignature}
+          settingsSignatureCanvasRef={settingsCanvasRef as React.RefObject<HTMLCanvasElement | null>}
+          handleSettingsSignatureStartDrawing={settingsSignature.handleSettingsSignatureStartDrawing as unknown as (e: MouseEvent | TouchEvent) => void}
+          handleSettingsSignatureDraw={settingsSignature.handleSettingsSignatureDraw as unknown as (e: MouseEvent | TouchEvent) => void}
+          handleSettingsSignatureStopDrawing={settingsSignature.handleSettingsSignatureStopDrawing} />
       )}
       {editor.showShareModal && (
         <DocumentShareModal formData={editor.formData} companySettings={companySettings} userId={userId}

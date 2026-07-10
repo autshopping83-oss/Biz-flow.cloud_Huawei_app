@@ -18,6 +18,8 @@ interface DashboardProps {
   onDeleteDocument?: (id: string) => void;
   onInstallApp?: () => void;
   showInstallButton?: boolean;
+  onViewProducts?: () => void;
+  onViewClients?: () => void;
 }
 
 type DashTab = 'OVERVIEW' | 'FINANCE';
@@ -97,6 +99,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <button onClick={() => handleNav('FINANCE')} className={`w-full text-left px-5 py-3.5 rounded-xl font-bold flex items-center gap-4 border transition-all ${activeTab === 'FINANCE' ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white shadow-sm' : 'bg-transparent border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                  <i className={`fa-solid fa-chart-pie w-5 text-center ${activeTab === 'FINANCE' ? 'text-blue-600' : 'text-slate-400'}`}></i> {t('finance')}
+            </button>
+
+            <button onClick={() => { setIsMenuOpen(false); onViewProducts?.(); }} className="w-full text-left px-5 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-4 transition-colors">
+                 <i className="fa-solid fa-boxes-stacked text-slate-400 w-5 text-center"></i> Produtos
+            </button>
+
+            <button onClick={() => { setIsMenuOpen(false); onViewClients?.(); }} className="w-full text-left px-5 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-4 transition-colors">
+                 <i className="fa-solid fa-users text-slate-400 w-5 text-center"></i> Clientes
+            </button>
+
+            <button onClick={() => { setIsMenuOpen(false); onViewHistory(); }} className="w-full text-left px-5 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-4 transition-colors">
+                 <i className="fa-solid fa-clock-rotate-left text-slate-400 w-5 text-center"></i> Histórico
             </button>
             
             <div className="border-t border-slate-100 dark:border-slate-800 my-4 mx-2"></div>

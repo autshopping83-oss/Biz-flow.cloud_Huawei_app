@@ -33,6 +33,7 @@ interface EditorFormViewProps {
   onSendWhatsApp: () => void;
   onSendEmail: () => void;
   setShowSaveProductModal: (show: boolean) => void;
+  onViewClientHistory?: (clientName: string) => void;
 }
 
 interface SectionProps {
@@ -82,6 +83,7 @@ export const EditorFormView: React.FC<EditorFormViewProps> = ({
   handleShowNewProductModal,
   onSendWhatsApp, onSendEmail,
   setShowSaveProductModal,
+  onViewClientHistory,
 }) => (
   <div className="space-y-6 animate-slideUp">
     {/* Type Switcher */}
@@ -119,9 +121,17 @@ export const EditorFormView: React.FC<EditorFormViewProps> = ({
 
     {/* Client */}
     <Section title={t('client')} icon="fa-user-tie" action={
-      <button onClick={onClearClient} className="text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors">
-        <i className="fa-solid fa-plus"></i> {t('addClient')}
-      </button>
+      <div className="flex gap-2">
+        {formData.clientName && onViewClientHistory && (
+          <button onClick={() => onViewClientHistory(formData.clientName)}
+            className="text-xs font-bold text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-md hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors">
+            <i className="fa-solid fa-clock-rotate-left"></i> Histórico
+          </button>
+        )}
+        <button onClick={onClearClient} className="text-xs font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors">
+          <i className="fa-solid fa-plus"></i> {t('addClient')}
+        </button>
+      </div>
     }>
       <Input name="clientName" value={formData.clientName} onChange={onChange} placeholder="Nome do Cliente / Empresa" list="client-list" autoComplete="off" icon="fa-magnifying-glass" />
       <datalist id="client-list">{savedClients.map((c, i) => <option key={i} value={c.name} />)}</datalist>

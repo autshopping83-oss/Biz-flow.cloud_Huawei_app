@@ -24,6 +24,7 @@ export interface EditorFormProps {
   onConvertQuote?: () => void;
   userId?: string;
   onThemeChange?: (theme: 'color' | 'bw') => void;
+  onViewClientHistory?: (clientName: string) => void;
 }
 
 export const EditorForm: React.FC<EditorFormProps> = (props) => {
@@ -114,6 +115,7 @@ export const EditorForm: React.FC<EditorFormProps> = (props) => {
     handleShowNewProductModal,
     onSendWhatsApp: handleSendWhatsApp, onSendEmail: handleSendEmail,
     setShowSaveProductModal,
+    onViewClientHistory: props.onViewClientHistory,
   };
 
   return <EditorFormView {...viewProps} />;

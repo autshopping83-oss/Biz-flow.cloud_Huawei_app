@@ -44,6 +44,7 @@ interface AppEditorViewProps {
   onClearClient: () => void;
   onThemeChange: (theme: 'color' | 'bw') => void;
   userId?: string;
+  onViewClientHistory?: (clientName: string) => void;
 }
 
 export const AppEditorView: React.FC<AppEditorViewProps> = ({
@@ -53,6 +54,7 @@ export const AppEditorView: React.FC<AppEditorViewProps> = ({
   t, fMoney, onBack, onOpenSettings, onShareWhatsApp, onOpenShareModal,
   onSetMobileTab, onFormDataChange, onNewItemChange, onAddItem, onRemoveItem,
   onEnhanceDescription, onInitNew, onSign, onClearClient, onThemeChange, userId,
+  onViewClientHistory,
 }) => {
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col h-screen overflow-hidden transition-colors duration-500">
@@ -113,6 +115,7 @@ export const AppEditorView: React.FC<AppEditorViewProps> = ({
               savedProducts={savedProducts}
               onThemeChange={onThemeChange}
               userId={userId}
+              onViewClientHistory={onViewClientHistory}
             />
           </div>
         </div>

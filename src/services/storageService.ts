@@ -56,6 +56,30 @@ export const getSavedClients = async (userId: string): Promise<SavedClient[]> =>
   }
 };
 
+export const addClient = async (client: SavedClient): Promise<void> => {
+  try {
+    await db.clients.add(client);
+  } catch (e) {
+    throw new Error('Erro ao adicionar cliente');
+  }
+};
+
+export const updateClient = async (id: number, updates: Partial<SavedClient>): Promise<void> => {
+  try {
+    await db.clients.update(id, updates);
+  } catch (e) {
+    throw new Error('Erro ao atualizar cliente');
+  }
+};
+
+export const deleteClient = async (id: number): Promise<void> => {
+  try {
+    await db.clients.delete(id);
+  } catch (e) {
+    throw new Error('Erro ao excluir cliente');
+  }
+};
+
 export const getSavedProducts = async (userId: string): Promise<SavedProduct[]> => {
   if (!userId) return [];
   try {
