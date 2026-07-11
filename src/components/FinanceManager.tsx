@@ -9,6 +9,7 @@ interface Props {
   t: (key: string) => string;
   userId: string;
   lang: string;
+  refreshKey?: number;
 }
 
 type TimeRange = 'WEEK' | 'MONTH' | 'YEAR';
@@ -84,7 +85,7 @@ const PieChart: React.FC<{ data: { labels: string[], data: number[], total: numb
 };
 
 
-export const FinanceManager: React.FC<Props> = ({ currency, t, userId, lang }) => {
+export const FinanceManager: React.FC<Props> = ({ currency, t, userId, lang, refreshKey }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('WEEK');
@@ -108,7 +109,7 @@ export const FinanceManager: React.FC<Props> = ({ currency, t, userId, lang }) =
     if (userId) {
       fetchTransactions();
     }
-  }, [userId]);
+  }, [userId, refreshKey]);
 
   const fetchTransactions = async () => {
     setIsLoading(true);

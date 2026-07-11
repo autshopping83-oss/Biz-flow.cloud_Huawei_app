@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ReceiptData, CompanySettings, DocumentType } from '../types';
 import { formatMoney } from '../services/translationService';
 import { FinanceManager } from './FinanceManager';
@@ -24,16 +24,27 @@ interface DashboardProps {
   syncing?: boolean;
   isConnected?: boolean;
   onOpenConnectAccount?: () => void;
+  defaultDashTab?: DashTab;
+  openMenu?: boolean;
 }
 
 type DashTab = 'OVERVIEW' | 'FINANCE';
 
 export const Dashboard: React.FC<DashboardProps> = ({
-  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, onDeleteDocument, onInstallApp, showInstallButton, onViewProducts, onViewClients, onSync, syncing, isConnected, onOpenConnectAccount
+  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, onDeleteDocument, onInstallApp, showInstallButton, onViewProducts, onViewClients, onSync, syncing, isConnected, onOpenConnectAccount, defaultDashTab, openMenu
 }) => {
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<DashTab>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<DashTab>(defaultDashTab || 'OVERVIEW');
+
+  // React to external tab/menu requests from BottomNav
+  useEffect(() => {
+    if (defaultDashTab) setActiveTab(defaultDashTab);
+  }, [defaultDashTab]);
+
+  useEffect(() => {
+    if (openMenu) setIsMenuOpen(true);
+  }, [openMenu]);
   const recentHistory = history.slice(0, 5);
 
   const handleNav = (tab: DashTab) => {
@@ -183,7 +194,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
          
          {activeTab === 'FINANCE' ? (
-            <FinanceManager currency={companySettings.currency} t={t} userId={userId} lang={companySettings.language} />
+            <FinanceManager currency={companySettings.currency} t={t} userId={userId} lang={companySettings.language} refreshKey={Date.now()} />
          ) : (
             <div className="animate-fadeIn">
                  {/* Overview Header */}

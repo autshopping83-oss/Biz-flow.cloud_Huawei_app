@@ -60,6 +60,8 @@ const App: React.FC = () => {
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [forcedDashTab, setForcedDashTab] = useState<string | undefined>(undefined);
+  const [forceMenu, setForceMenu] = useState<number>(0);
 
   console.debug('BizFlow version:', V);
 
@@ -85,10 +87,19 @@ const App: React.FC = () => {
 
   const handleTabChange = (tab: NavTab) => {
     setActiveTab(tab);
-    if (tab === 'home') setCurrentView('home');
-    else if (tab === 'history') setCurrentView('history');
-    else if (tab === 'finance') setCurrentView('home'); // finance is rendered inside Dashboard
-    else if (tab === 'more') setCurrentView('home'); // more options in sidebar
+    if (tab === 'home') {
+      setCurrentView('home');
+      setForcedDashTab(undefined);
+    } else if (tab === 'history') {
+      setCurrentView('history');
+    } else if (tab === 'finance') {
+      setCurrentView('home');
+      setForcedDashTab('FINANCE');
+    } else if (tab === 'more') {
+      setCurrentView('home');
+      setForcedDashTab('OVERVIEW');
+      setForceMenu(n => n + 1);
+    }
   };
 
   const handleSettingsSaveSignature = () => {
@@ -164,7 +175,9 @@ const App: React.FC = () => {
             onInstallApp={() => {}} showInstallButton={false}
             onViewProducts={() => setCurrentView('products')} onViewClients={() => setCurrentView('clients')}
             onSync={handleSync} syncing={syncing} isConnected={isConnected}
-            onOpenConnectAccount={() => setShowConnectModal(true)} />
+            onOpenConnectAccount={() => setShowConnectModal(true)}
+            defaultDashTab={forcedDashTab as any}
+            openMenu={forceMenu > 0} />
         );
       case 'history':
         return (
