@@ -17,33 +17,80 @@ interface DocumentShareModalProps {
   onGetPdfBlob?: () => Promise<{ blob: Blob; fileName: string } | null>;
 }
 
-type ShareMethod = 'email' | 'whatsapp' | 'download' | 'print' | null;
+type ShareMethod = 'email' | 'whatsapp' | 'download' | 'print' | 'nativeshare' | null;
 
-async function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(',')[1] ?? result);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
+async function getPdfData(onGetPdfBlob: (() => Promise<{ blob: Blob; fileName: string } | null>) | undefined, fMoney: (val: number) => string, formData: ReceiptData): Promise<{ blob: Blob; fileName: string } | null> {
+  // Tenta html2canvas via hook primeiro
+  if (onGetPdfBlob) {
+    const data = await onGetPdfBlob();
+    if (data) return data;
+  }
+  // Fallback: jsPDF puro
+  return gerarPdfFallback(fMoney, formData);
 }
 
-async function uploadPdf(pdfData: { blob: Blob; fileName: string }): Promise<string | null> {
+async function gerarPdfFallback(fMoney: (val: number) => string, formData: ReceiptData): Promise<{ blob: Blob; fileName: string } | null> {
   try {
-    const base64 = await blobToBase64(pdfData.blob);
-    const res = await fetch('/api/upload-pdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pdfBase64: base64, nomeArquivo: pdfData.fileName }),
+    const { jsPDF } = await import('jspdf');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const doc = formData;
+    const tipo = { INVOICE: 'FACTURA', RECEIPT: 'RECIBO', INVOICE_RECEIPT: 'FACTURA-RECIBO', QUOTE: 'ORÇAMENTO' }[doc.type] || doc.type;
+    let y = 20;
+    pdf.setFontSize(18);
+    pdf.text(doc.companyName || 'Biz-flow', 105, y, { align: 'center' }); y += 10;
+    pdf.setFontSize(14);
+    pdf.text(tipo + ' #' + doc.number, 105, y, { align: 'center' }); y += 8;
+    pdf.setFontSize(10);
+    pdf.text('Data: ' + doc.date, 20, y); y += 8;
+    if (doc.clientName) { pdf.text('Cliente: ' + doc.clientName, 20, y); y += 6; }
+    y += 4;
+    pdf.setFontSize(8);
+    doc.items.forEach(item => {
+      const line = `${item.description}  |  ${item.quantity}x  |  ${fMoney(item.unitPrice)}  |  ${fMoney(item.total)}`;
+      if (y > 275) { pdf.addPage(); y = 20; }
+      pdf.text(line, 20, y); y += 6;
     });
-    const data = await res.json();
-    return data.sucesso ? data.url : null;
-  } catch {
-    return null;
-  }
+    y += 4; pdf.setFontSize(12);
+    pdf.text('Subtotal: ' + fMoney(doc.subtotal), 190, y, { align: 'right' }); y += 7;
+    if (doc.taxRate > 0) { pdf.text('IVA (' + doc.taxRate + '%): ' + fMoney(doc.taxAmount), 190, y, { align: 'right' }); y += 7; }
+    if (doc.discount > 0) { pdf.text('Desconto: -' + fMoney(doc.discount), 190, y, { align: 'right' }); y += 7; }
+    pdf.setFontSize(16);
+    pdf.setTextColor(37, 99, 235);
+    pdf.text('Total: ' + fMoney(doc.total), 190, y + 4, { align: 'right' });
+    const blob = pdf.output('blob');
+    const fileName = (doc.number || 'documento').replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
+    return { blob, fileName };
+  } catch { return null; }
+}
+
+async function savePdfToDevice(blob: Blob, fileName: string): Promise<string | null> {
+  try {
+    const { Filesystem, Directory } = await import('@capacitor/filesystem');
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(',')[1] ?? '');
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    await Filesystem.writeFile({ path: `Documents/${fileName}`, data: base64, directory: Directory.Documents });
+    const uri = await Filesystem.getUri({ path: `Documents/${fileName}`, directory: Directory.Documents });
+    return uri.uri;
+  } catch { return null; }
+}
+
+async function savePdfToCache(blob: Blob, fileName: string): Promise<string | null> {
+  try {
+    const { Filesystem, Directory } = await import('@capacitor/filesystem');
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(',')[1] ?? '');
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    await Filesystem.writeFile({ path: `temp/${fileName}`, data: base64, directory: Directory.Cache });
+    const uri = await Filesystem.getUri({ path: `temp/${fileName}`, directory: Directory.Cache });
+    return uri.uri;
+  } catch { return null; }
 }
 
 export const DocumentShareModal: React.FC<DocumentShareModalProps> = ({
@@ -57,177 +104,136 @@ export const DocumentShareModal: React.FC<DocumentShareModalProps> = ({
   const [isSending, setIsSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  const handleSendEmail = async (destinatario: string, pdfData: { blob: Blob; fileName: string } | null) => {
-    if (!userId || userId === 'local') {
-      // Sem userId, abrir mailto: como fallback
-      const subject = `Documento ${formData.number}`;
-      const body = `Olá ${recipientName},\n\nSegue o documento ${formData.number}.\n\nCumprimentos,\n${companySettings.name}`;
-      window.open(`mailto:${destinatario}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
-      setSendResult({ success: true, message: `Email aberto para ${recipientName}!` });
-      return;
-    }
+  const isNative = typeof window !== 'undefined' && !!(window as any).Capacitor?.isNativePlatform?.();
 
-    try {
-      const base64 = pdfData ? await blobToBase64(pdfData.blob) : '';
-      const res = await fetch('/api/enviar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          destinatario,
-          assunto: `Documento ${formData.number} - ${formData.type}`,
-          corpoHtml: `
-            <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-              <div style="background:#2563eb;padding:20px;text-align:center;border-radius:12px 12px 0 0">
-                <img src="https://biz-flow.cloud/logo.svg" height="40" alt="Biz-flow" />
-              </div>
-              <div style="padding:30px;background:#fff;border:1px solid #e2e8f0">
-                <h2 style="color:#0f172a">${formData.type === 'INVOICE' ? 'Factura' : formData.type === 'RECEIPT' ? 'Recibo' : formData.type === 'INVOICE_RECEIPT' ? 'Factura-Recibo' : 'Orçamento'} #${formData.number}</h2>
-                <p style="color:#64748b">Olá <strong>${recipientName}</strong>,</p>
-                <p style="color:#64748b">Segue em anexo o documento <strong>${formData.number}</strong>.</p>
-                <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0" />
-                <table style="width:100%;font-size:14px;color:#475569">
-                  <tr><td style="padding:4px 0">Cliente</td><td style="font-weight:bold;text-align:right">${recipientName}</td></tr>
-                  <tr><td style="padding:4px 0">Data</td><td style="font-weight:bold;text-align:right">${formData.date}</td></tr>
-                  <tr><td style="padding:4px 0">Valor Total</td><td style="font-weight:bold;text-align:right;color:#2563eb;font-size:18px">${formData.total.toLocaleString()} ${formData.currency}</td></tr>
-                </table>
-                <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0" />
-                <p style="color:#94a3b8;font-size:12px">Documento gerado pelo Biz-flow</p>
-              </div>
-            </div>
-          `,
-          pdfBase64: base64,
-          pdfNome: pdfData?.fileName || `${formData.number}.pdf`,
-        }),
-      });
-      const data = await res.json();
-      if (data.sucesso) {
-        setSendResult({ success: true, message: `Email enviado com PDF para ${recipientName}!` });
-      } else {
-        throw new Error(data.erro || 'Erro ao enviar');
-      }
-    } catch (erro) {
-      // Fallback: mailto:
-      const subject = `Documento ${formData.number}`;
-      window.open(`mailto:${destinatario}?subject=${encodeURIComponent(subject)}`, '_blank');
-      setSendResult({ success: true, message: `Email aberto para ${recipientName} (modo offline).` });
-    }
-  };
+  // Gera PDF (html2canvas → jsPDF fallback)
+  const getPdf = async () => getPdfData(onGetPdfBlob, fMoney, formData);
 
-  const handleSendWhatsApp = async (telefone: string, pdfData: { blob: Blob; fileName: string } | null) => {
-    // Tentar upload do PDF para obter link
-    let pdfUrl = '';
-    if (pdfData) {
-      pdfUrl = await uploadPdf(pdfData) || '';
-    }
-
-    const cleanPhone = telefone.replace(/\D/g, '');
-    const texto = pdfUrl
-      ? `Olá ${recipientName}! 👋\n\nSegue o documento *${formData.number}* do Biz-flow.\n\n📄 PDF: ${pdfUrl}\n\nQualquer dúvida, estamos à disposição.`
-      : `Olá ${recipientName}, segue o documento ${formData.number} no valor de ${formData.total} ${formData.currency}. Acesse: https://biz-flow.cloud`;
-
-    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(texto)}`, '_blank');
-    setSendResult({ success: true, message: `WhatsApp aberto para ${recipientName}!${pdfUrl ? ' PDF disponivel no link.' : ''}` });
-  };
-
-  const gerarPdfFallback = async (): Promise<{ blob: Blob; fileName: string } | null> => {
-    try {
-      const { jsPDF } = await import('jspdf');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const doc = formData;
-      const tipo = { INVOICE: 'FACTURA', RECEIPT: 'RECIBO', INVOICE_RECEIPT: 'FACTURA-RECIBO', QUOTE: 'ORÇAMENTO' }[doc.type] || doc.type;
-      let y = 20;
-      pdf.setFontSize(18);
-      pdf.text(doc.companyName || 'Biz-flow', 105, y, { align: 'center' }); y += 10;
-      pdf.setFontSize(14);
-      pdf.text(tipo + ' #' + doc.number, 105, y, { align: 'center' }); y += 8;
-      pdf.setFontSize(10);
-      pdf.text('Data: ' + doc.date, 20, y); y += 8;
-      if (doc.clientName) { pdf.text('Cliente: ' + doc.clientName, 20, y); y += 6; }
-      y += 4;
-      pdf.setFontSize(8);
-      doc.items.forEach(item => {
-        const line = `${item.description}  |  ${item.quantity}x  |  ${fMoney(item.unitPrice)}  |  ${fMoney(item.total)}`;
-        if (y > 275) { pdf.addPage(); y = 20; }
-        pdf.text(line, 20, y); y += 6;
-      });
-      y += 4; pdf.setFontSize(12);
-      pdf.text('Subtotal: ' + fMoney(doc.subtotal), 190, y, { align: 'right' }); y += 7;
-      if (doc.taxRate > 0) { pdf.text('IVA (' + doc.taxRate + '%): ' + fMoney(doc.taxAmount), 190, y, { align: 'right' }); y += 7; }
-      if (doc.discount > 0) { pdf.text('Desconto: -' + fMoney(doc.discount), 190, y, { align: 'right' }); y += 7; }
-      pdf.setFontSize(16);
-      pdf.setTextColor(37, 99, 235);
-      pdf.text('Total: ' + fMoney(doc.total), 190, y + 4, { align: 'right' });
-      const blob = pdf.output('blob');
-      const fileName = (doc.number || 'documento').replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
-      return { blob, fileName };
-    } catch { return null; }
-  };
-
-  const handleSend = async (method: 'email' | 'whatsapp') => {
-    const recipient = method === 'email' ? recipientEmail : recipientPhone;
-    if (!recipient || !recipientName) return;
+  // Native Share Sheet (Android share sheet com PDF anexado)
+  const handleNativeShare = async () => {
     setIsSending(true);
     setSendResult(null);
-
-    // 1. GERAR PDF — tentar html2canvas, se falhar usar jsPDF direto
-    let pdfData: { blob: Blob; fileName: string } | null = null;
-    if (onGetPdfBlob) {
-      pdfData = await onGetPdfBlob();
-    }
+    const pdfData = await getPdf();
     if (!pdfData) {
-      pdfData = await gerarPdfFallback();
-    }
-    if (!pdfData) {
-      setSendResult({ success: false, message: 'Erro ao gerar PDF. Tente novamente.' });
+      setSendResult({ success: false, message: 'Erro ao gerar PDF.' });
       setIsSending(false);
       return;
     }
-
     try {
-      if (method === 'email') {
-        await handleSendEmail(recipient, pdfData);
+      const uri = await savePdfToCache(pdfData.blob, pdfData.fileName);
+      if (uri) {
+        const { Share } = await import('@capacitor/share');
+        await Share.share({ title: pdfData.fileName, url: uri, dialogTitle: 'Compartilhar Documento' });
+        setSendResult({ success: true, message: 'Documento partilhado!' });
       } else {
-        await handleSendWhatsApp(recipient, pdfData);
+        setSendResult({ success: false, message: 'Erro ao preparar PDF.' });
       }
-    } catch (err: unknown) {
-      // Fallback: download do PDF para envio manual
+    } catch {
+      setSendResult({ success: false, message: 'Partilha cancelada.' });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Baixar PDF (salva no dispositivo)
+  const handleDownload = async () => {
+    setIsSending(true);
+    setSendResult(null);
+    const pdfData = await getPdf();
+    if (!pdfData) {
+      // Fallback para o método antigo (onGeneratePDF via useDocumentActions)
+      await onGeneratePDF();
+      onClose();
+      return;
+    }
+    if (isNative) {
+      const uri = await savePdfToDevice(pdfData.blob, pdfData.fileName);
+      if (uri) {
+        setSendResult({ success: true, message: `PDF guardado em: Documentos/${pdfData.fileName}` });
+      } else {
+        setSendResult({ success: false, message: 'Erro ao guardar PDF.' });
+      }
+    } else {
+      // Web fallback: download
       const url = URL.createObjectURL(pdfData.blob);
       const a = document.createElement('a');
       a.href = url; a.download = pdfData.fileName;
       document.body.appendChild(a); a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      setSendResult({
-        success: true,
-        message: `PDF descarregado (${pdfData.fileName}). Envie manualmente.`,
-      });
-    } finally {
-      setIsSending(false);
+      setSendResult({ success: true, message: `PDF "${pdfData.fileName}" descarregado!` });
     }
+    setIsSending(false);
   };
 
-  const handleDownload = async () => {
-    if (onGetPdfBlob) {
-      const pdfData = await onGetPdfBlob();
-      if (pdfData) {
-        const url = URL.createObjectURL(pdfData.blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = pdfData.fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        setSendResult({ success: true, message: `PDF "${pdfData.fileName}" descarregado!` });
+  // WhatsApp (abre app nativo ou wa.me)
+  const handleSendWhatsApp = async (telefone: string) => {
+    const cleanPhone = telefone.replace(/\D/g, '');
+    const texto = `Olá ${recipientName}, segue o documento ${formData.number} no valor de ${fMoney(formData.total)}. Biz-flow`;
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(texto)}`;
+
+    if (isNative) {
+      try {
+        const { AppLauncher } = await import('@capacitor/app-launcher');
+        await AppLauncher.openUrl({ url: waUrl });
+      } catch {
+        window.open(waUrl, '_blank');
+      }
+    } else {
+      window.open(waUrl, '_blank');
+    }
+    setSendResult({ success: true, message: `WhatsApp aberto para ${recipientName}!` });
+  };
+
+  // Email (abre app nativo ou mailto:)
+  const handleSendEmail = async (destinatario: string) => {
+    const subject = `Documento ${formData.number}`;
+    const body = `Olá ${recipientName},\n\nSegue o documento ${formData.number}.\n\nCumprimentos,\n${companySettings.name}`;
+    const mailtoUrl = `mailto:${destinatario}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    if (isNative) {
+      try {
+        const { AppLauncher } = await import('@capacitor/app-launcher');
+        await AppLauncher.openUrl({ url: mailtoUrl });
+      } catch {
+        window.open(mailtoUrl, '_blank');
+      }
+    } else {
+      window.open(mailtoUrl, '_blank');
+    }
+    setSendResult({ success: true, message: `Email aberto para ${recipientName}!` });
+  };
+
+  // Enviar (após preencher formulário)
+  const handleSend = async (method: 'email' | 'whatsapp') => {
+    const recipient = method === 'email' ? recipientEmail : recipientPhone;
+    if (!recipient || !recipientName) return;
+    setIsSending(true);
+    setSendResult(null);
+
+    if (method === 'email') {
+      await handleSendEmail(recipient);
+    } else {
+      await handleSendWhatsApp(recipient);
+    }
+    setIsSending(false);
+  };
+
+  // Impressão Térmica
+  const handlePrint = async () => {
+    if (isNative) {
+      // Tentar BLE nativo, se falhar avisar
+      try {
+        await onPrintThermal();
+      } catch {
+        setSendResult({ success: false, message: 'Conecte uma impressora Bluetooth primeiro.' });
         return;
       }
+    } else {
+      await onPrintThermal();
     }
-    await onGeneratePDF();
     onClose();
   };
-
-  const handlePrint = async () => { await onPrintThermal(); onClose(); };
 
   const viewProps = {
     formData, companySettings, userId, isGeneratingPdf, isPrinting,
@@ -238,6 +244,7 @@ export const DocumentShareModal: React.FC<DocumentShareModalProps> = ({
     recipientPhone, setRecipientPhone,
     isSending, sendResult,
     handleSend, handleDownload, handlePrint,
+    handleNativeShare, isNative,
   };
 
   return <DocumentShareModalView {...viewProps} />;

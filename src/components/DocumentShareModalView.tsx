@@ -1,7 +1,7 @@
 import React from 'react';
 import { ReceiptData, CompanySettings } from '../types';
 
-type ShareMethod = 'email' | 'whatsapp' | 'download' | 'print' | null;
+type ShareMethod = 'email' | 'whatsapp' | 'download' | 'print' | 'nativeshare' | null;
 
 interface DocumentShareModalViewProps {
   formData: ReceiptData;
@@ -27,6 +27,8 @@ interface DocumentShareModalViewProps {
   handleSend: (method: 'email' | 'whatsapp') => void;
   handleDownload: () => void;
   handlePrint: () => void;
+  handleNativeShare?: () => void;
+  isNative?: boolean;
 }
 
 const documentTypeLabel = (type: string) =>
@@ -36,7 +38,7 @@ export const DocumentShareModalView: React.FC<DocumentShareModalViewProps> = ({
   formData, isGeneratingPdf, isPrinting, onClose, t, fMoney,
   selectedMethod, setSelectedMethod,
   recipientEmail, setRecipientEmail, recipientName, setRecipientName, recipientPhone, setRecipientPhone,
-  isSending, sendResult, handleSend, handleDownload, handlePrint,
+  isSending, sendResult, handleSend, handleDownload, handlePrint, handleNativeShare, isNative,
 }) => {
   const isEmail = selectedMethod === 'email';
 
@@ -78,8 +80,23 @@ export const DocumentShareModalView: React.FC<DocumentShareModalViewProps> = ({
         <div className="p-6 space-y-3">
           <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">Escolha como deseja enviar</p>
 
-          {renderOption('email', 'fa-envelope', 'bg-blue-100', 'text-blue-600', 'Enviar por Email', 'Envia o documento como anexo via webhook')}
-          {renderOption('whatsapp', 'fa-whatsapp', 'bg-emerald-100', 'text-emerald-600', 'Enviar por WhatsApp', 'Envia a mensagem com resumo do documento via webhook')}
+          {/* Native Share (Android) - aparece apenas em dispositivo nativo */}
+          {isNative && handleNativeShare && (
+            <button onClick={handleNativeShare}
+              className="w-full flex items-center gap-4 p-4 rounded-2xl border border-blue-200 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-900/10 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group">
+              <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                <i className="fa-solid fa-share-nodes text-xl"></i>
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-bold dark:text-white">Compartilhar via...</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Abre o menu de partilha nativo do Android</p>
+              </div>
+              <i className="fa-solid fa-chevron-right text-blue-400 group-hover:text-blue-500 transition-colors"></i>
+            </button>
+          )}
+
+          {renderOption('email', 'fa-envelope', 'bg-blue-100', 'text-blue-600', 'Enviar por Email', 'Abre o app de email do dispositivo')}
+          {renderOption('whatsapp', 'fa-whatsapp', 'bg-emerald-100', 'text-emerald-600', 'Enviar por WhatsApp', 'Abre o WhatsApp com mensagem pronta')}
 
           <button onClick={handleDownload} disabled={isGeneratingPdf}
             className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all group disabled:opacity-50">
@@ -87,8 +104,8 @@ export const DocumentShareModalView: React.FC<DocumentShareModalViewProps> = ({
               <i className="fa-solid fa-file-pdf text-xl"></i>
             </div>
             <div className="flex-1 text-left">
-              <p className="font-bold dark:text-white">Baixar PDF</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Gera e salva o documento em formato PDF A4</p>
+              <p className="font-bold dark:text-white">{isNative ? 'Guardar PDF' : 'Baixar PDF'}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{isNative ? 'Guarda o PDF no dispositivo' : 'Gera e descarrega o PDF'}</p>
             </div>
             {isGeneratingPdf ? <i className="fa-solid fa-spinner animate-spin text-purple-500"></i> : <i className="fa-solid fa-chevron-right text-slate-300 dark:text-slate-600 group-hover:text-purple-500 transition-colors"></i>}
           </button>
