@@ -22,12 +22,14 @@ interface DashboardProps {
   onViewClients?: () => void;
   onSync?: () => void;
   syncing?: boolean;
+  isConnected?: boolean;
+  onOpenConnectAccount?: () => void;
 }
 
 type DashTab = 'OVERVIEW' | 'FINANCE';
 
 export const Dashboard: React.FC<DashboardProps> = ({
-  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, onDeleteDocument, onInstallApp, showInstallButton, onViewProducts, onViewClients, onSync, syncing
+  history, companySettings, onLogout, onNewDocument, onOpenSettings, onLoadDocument, onViewHistory, onToggleTheme, t, userId, onDeleteDocument, onInstallApp, showInstallButton, onViewProducts, onViewClients, onSync, syncing, isConnected, onOpenConnectAccount
 }) => {
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -117,11 +119,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
             
             <div className="border-t border-slate-100 dark:border-slate-800 my-4 mx-2"></div>
 
-            {onSync && (
+            {isConnected && onSync && (
               <button onClick={() => { setIsMenuOpen(false); onSync(); }} disabled={syncing}
                 className="w-full text-left px-5 py-3.5 rounded-xl font-medium flex items-center gap-4 border transition-all bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50">
                 <i className={`fa-solid ${syncing ? 'fa-spinner animate-spin' : 'fa-cloud-arrow-up'} text-blue-500 w-5 text-center`}></i>
                 {syncing ? 'A sincronizar...' : 'Sincronizar com a Nuvem'}
+              </button>
+            )}
+
+            {!isConnected && (
+              <button onClick={() => { setIsMenuOpen(false); onOpenConnectAccount?.(); }}
+                className="w-full text-left px-5 py-3.5 rounded-xl font-medium flex items-center gap-4 border transition-all bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40">
+                <i className="fa-solid fa-link text-emerald-500 w-5 text-center"></i>
+                Conectar Conta
               </button>
             )}
 
@@ -134,9 +144,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
-           <button onClick={onLogout} className="w-full text-left px-5 py-3 rounded-xl text-red-600 font-bold hover:bg-red-50 dark:hover:bg-slate-800 border border-transparent hover:border-red-100 dark:hover:border-slate-700 flex items-center gap-3 transition-all">
-             <i className="fa-solid fa-right-from-bracket w-5 text-center"></i> Sair da Conta
-           </button>
+           {isConnected ? (
+             <button onClick={onLogout} className="w-full text-left px-5 py-3 rounded-xl text-red-600 font-bold hover:bg-red-50 dark:hover:bg-slate-800 border border-transparent hover:border-red-100 dark:hover:border-slate-700 flex items-center gap-3 transition-all">
+               <i className="fa-solid fa-right-from-bracket w-5 text-center"></i> Sair da Conta
+             </button>
+           ) : (
+             <div className="text-center text-xs text-slate-400 dark:text-slate-600">
+               Dados salvos no dispositivo
+             </div>
+           )}
         </div>
       </div>
 

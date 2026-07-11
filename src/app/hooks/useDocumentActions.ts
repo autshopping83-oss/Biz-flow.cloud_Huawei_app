@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { saveDirectoryHandle } from '../../services/storageService';
 import { validators } from '../../utils/validators';
 import { ReceiptData } from '../../types';
 
@@ -25,21 +24,6 @@ export const useDocumentActions = ({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [localDirHandle, setLocalDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
-
-  const requestFolderPermission = useCallback(async () => {
-    if (!window.showDirectoryPicker) return null;
-    try {
-      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
-      setLocalDirHandle(handle);
-      await saveDirectoryHandle(handle);
-      notify('Pasta de armazenamento ativada!', 'success');
-      return handle;
-    } catch {
-      notify('Permissão de pasta não concedida.', 'info');
-      return null;
-    }
-  }, [notify]);
 
   const generatePDFBlob = useCallback(async (): Promise<{ blob: Blob; fileName: string } | null> => {
     const targetRef = ghostReceiptRef.current || receiptRef.current;
@@ -97,33 +81,30 @@ export const useDocumentActions = ({
 
       const { blob, fileName } = pdfData;
 
-      let dirHandle = localDirHandle;
-      if (!dirHandle && window.showDirectoryPicker) {
-        dirHandle = await requestFolderPermission();
-      }
-
-      if (dirHandle) {
+      // Tentar usar Capacitor FileSystem + Share
+      const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
+      if (isNative) {
         try {
-          const permission = await (dirHandle as FileSystemDirectoryHandle & { queryPermission(opts: { mode: 'read' | 'readwrite' }): Promise<PermissionState> }).queryPermission({ mode: 'readwrite' });
-          if (permission !== 'granted') await (dirHandle as FileSystemDirectoryHandle & { requestPermission(opts: { mode: 'read' | 'readwrite' }): Promise<PermissionState> }).requestPermission({ mode: 'readwrite' });
-          const subfolderName = formData.type === 'INVOICE' ? 'Faturas' : formData.type === 'INVOICE_RECEIPT' ? 'Faturas-Recibos' : formData.type === 'QUOTE' ? 'Orcamentos' : 'Recibos';
-          const subDir = await dirHandle.getDirectoryHandle(subfolderName, { create: true });
-          const fileHandle = await subDir.getFileHandle(fileName, { create: true });
-          const writable = await fileHandle.createWritable();
-          await writable.write(blob);
-          await writable.close();
-          notify(`Salvo com sucesso na pasta: ${subfolderName}`, 'success');
+          const { NativeFileService } = await import('../../services/nativeFileService');
+          const { NativeShareService } = await import('../../services/nativeShareService');
+          const uri = await NativeFileService.savePDF(blob, fileName);
+          await NativeShareService.shareFile(uri, fileName, 'Salvar ou Compartilhar PDF');
+          notify('Documento gerado com sucesso!', 'success');
         } catch {
+          // Fallback: download direto
           const link = document.createElement('a');
           link.href = URL.createObjectURL(blob);
           link.download = fileName;
           link.click();
+          notify('Documento descarregado!', 'success');
         }
       } else {
+        // Web fallback: download
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = fileName;
         link.click();
+        notify('Documento descarregado!', 'success');
       }
 
       await handleSave(true);
@@ -132,32 +113,51 @@ export const useDocumentActions = ({
     } finally {
       setIsGeneratingPdf(false);
     }
-  }, [formData, generatePDFBlob, handleSave, localDirHandle, notify, requestFolderPermission]);
+  }, [formData, generatePDFBlob, handleSave, notify]);
 
   const handleShareWhatsApp = useCallback(async () => {
     if (isSharing) return;
     setIsSharing(true);
-    notify('Preparando partilha direta...', 'info');
+    notify('Preparando partilha...', 'info');
 
     try {
       const pdfData = await generatePDFBlob();
       if (!pdfData) throw new Error('Erro ao gerar ficheiro.');
 
       const { blob, fileName } = pdfData;
-      const file = new File([blob], fileName, { type: 'application/pdf' });
 
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: fileName, text: `Envio de ${formData.number}` });
-        notify('Partilha concluída!', 'success');
-      } else {
-        if (!formData.clientContact || !validators.phone(formData.clientContact)) {
-          notify('Número de telefone inválido. Verifique o contato do cliente.', 'error');
-          setIsSharing(false);
-          return;
+      // Tentar share nativo via Capacitor
+      const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
+      if (isNative) {
+        try {
+          const { NativeFileService } = await import('../../services/nativeFileService');
+          const uri = await NativeFileService.savePDFToCache(blob, fileName);
+          const { NativeShareService } = await import('../../services/nativeShareService');
+          await NativeShareService.shareFile(uri, fileName, 'Compartilhar Documento');
+          notify('Partilha concluída!', 'success');
+        } catch {
+          // Fallback: WhatsApp link
+          if (!validators.phone(formData.clientContact || '')) {
+            notify('Número de telefone inválido.', 'error');
+          } else {
+            const cleanPhone = formData.clientContact!.replace(/\D/g, '');
+            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Olá, segue o documento ${formData.number}.`)}`, '_blank');
+          }
         }
-        const cleanPhone = formData.clientContact.replace(/\D/g, '');
-        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Olá, segue o documento ${formData.number}.`)}`, '_blank');
-        notify('Aviso: Seu navegador não suporta partilha de ficheiros direta. Abrindo chat...', 'info');
+      } else {
+        // Web: navigator.share ou WhatsApp fallback
+        const file = new File([blob], fileName, { type: 'application/pdf' });
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: fileName, text: `Envio de ${formData.number}` });
+          notify('Partilha concluída!', 'success');
+        } else {
+          if (!formData.clientContact || !validators.phone(formData.clientContact)) {
+            notify('Número de telefone inválido. Verifique o contato do cliente.', 'error');
+          } else {
+            const cleanPhone = formData.clientContact.replace(/\D/g, '');
+            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Olá, segue o documento ${formData.number}.`)}`, '_blank');
+          }
+        }
       }
     } catch {
       notify('Erro ao partilhar documento.', 'error');
@@ -259,8 +259,6 @@ export const useDocumentActions = ({
     isGeneratingPdf,
     isSharing,
     isPrinting,
-    localDirHandle,
-    requestFolderPermission,
     handleGeneratePDF,
     handleShareWhatsApp,
     handlePrintThermal,

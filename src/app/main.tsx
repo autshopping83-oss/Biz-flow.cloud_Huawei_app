@@ -16,14 +16,23 @@ declare global {
   }
 }
 
-// --- REMOVE SPLASH SCREEN ---
-const removeSplash = () => {
-  const splash = document.getElementById('app-splash');
-  if (splash) {
-    splash.style.opacity = '0';
-    setTimeout(() => splash.remove(), 500);
+// --- CAPACITOR INIT (Android) ---
+const initCapacitor = async () => {
+  if (window.Capacitor?.isNativePlatform()) {
+    try {
+      const { StatusBar, Style } = await import('@capacitor/status-bar');
+      await StatusBar.setStyle({ style: Style.Light });
+      await StatusBar.setBackgroundColor({ color: '#ffffff' });
+    } catch {
+      // Silencioso — pode não estar disponível
+    }
+
+    // Safe area CSS
+    document.documentElement.style.setProperty('--safe-area-bottom', 'env(safe-area-inset-bottom, 0px)');
   }
 };
+
+initCapacitor();
 
 // --- INITIALIZATION ---
 const rootElement = document.getElementById('root');
@@ -31,28 +40,14 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-// --- SERVICE WORKER REGISTRATION (PWA) ---
-if ('serviceWorker' in navigator && !window.Capacitor?.isNativePlatform()) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('./service-worker.js')
-      .then((registration) => {
-        console.log('SW registered: ', registration.scope);
-      })
-      .catch(() => {
-        // Silencioso - não crítico
-      });
-  });
-}
-
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
       <AuthProvider>
-      <ToastProvider>
-        <App onReady={removeSplash} />
-      </ToastProvider>
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>
   </React.StrictMode>

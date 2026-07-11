@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Biz-flow.cloud</string>
+    <string name="title_activity_main">Biz-flow.cloud</string>
+    <string name="package_name">biz.flow.cloud</string>
+    <string name="custom_url_scheme">biz.flow.cloud</string>
+</resources>

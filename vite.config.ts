@@ -5,10 +5,12 @@ export default defineConfig({
   plugins: [
     react(),
   ],
-  
+
+  base: './',
+
   build: {
     chunkSizeWarningLimit: 1000,
-    
+
     rollupOptions: {
       output: {
         manualChunks: {
@@ -20,30 +22,24 @@ export default defineConfig({
         assetFileNames: 'assets/[name]-[hash][extname]',
       },
     },
-    
+
     minify: 'esbuild',
-    
+
     cssCodeSplit: true,
     sourcemap: false,
     reportCompressedSize: true,
   },
-  
+
   esbuild: {
     treeShaking: true,
     legalComments: 'none',
   },
-  
+
   server: {
     port: 5173,
     strictPort: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3002',
-        changeOrigin: true,
-      },
-    },
   },
-  
+
   resolve: {
     alias: {
       '@': '/src',

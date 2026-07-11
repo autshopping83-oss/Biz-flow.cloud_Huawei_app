@@ -1,35 +1,29 @@
 import { useEffect, useRef } from 'react';
-import { getDirectoryHandle, getHistory, getSavedClients, getSavedProducts, getCompanySettings } from '../../services/storageService';
+import { getHistory, getSavedClients, getSavedProducts, getCompanySettings } from '../../services/storageService';
 import { CompanySettings, ReceiptData, SavedClient, SavedProduct } from '../../types';
 
 interface UseAppLifecycleParams {
   userId: string;
   currentView: string;
-  isGuest: boolean;
   setCurrentView: (view: string) => void;
-  setIsGuest: (guest: boolean) => void;
   setHistory: (history: ReceiptData[]) => void;
   setSavedClients: (clients: SavedClient[]) => void;
   setSavedProducts: (products: SavedProduct[]) => void;
   setCompanySettings: React.Dispatch<React.SetStateAction<CompanySettings>>;
   setIsOnline: (online: boolean) => void;
   setLocalDirHandle: (handle: FileSystemDirectoryHandle | null) => void;
-  onReady?: () => void;
 }
 
 export const useAppLifecycle = ({
   userId,
   currentView,
-  isGuest,
   setCurrentView,
-  setIsGuest,
   setHistory,
   setSavedClients,
   setSavedProducts,
   setCompanySettings,
   setIsOnline,
   setLocalDirHandle,
-  onReady,
 }: UseAppLifecycleParams) => {
   const loadedForRef = useRef<string | null>(null);
   const onReadyCalledRef = useRef(false);
@@ -38,16 +32,6 @@ export const useAppLifecycle = ({
 
   // Setup side effects once (listeners, etc.)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const view = params.get('view');
-    if (view === 'updatePassword') {
-      setCurrentView('updatePassword');
-    }
-
-    getDirectoryHandle().then(handle => {
-      if (handle) setLocalDirHandle(handle);
-    });
-
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
@@ -69,13 +53,11 @@ export const useAppLifecycle = ({
 
   const loadLocalData = async () => {
     try {
-      setIsGuest(false);
-      
       // Load settings from local storage
       const localSettings = await getCompanySettings(userId);
       if (localSettings) {
         setCompanySettings(prev => ({ ...prev, ...localSettings, plan: 'PRO' }));
-        
+
         // Apply theme from settings
         const theme = localSettings.theme || 'light';
         if (theme === 'dark') {
@@ -105,7 +87,6 @@ export const useAppLifecycle = ({
 
       if (!onReadyCalledRef.current) {
         onReadyCalledRef.current = true;
-        onReady?.();
       }
     } catch (error) {
       console.error('loadLocalData error:', error);

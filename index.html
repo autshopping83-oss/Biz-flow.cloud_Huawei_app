@@ -8,18 +8,6 @@
     <meta name="keywords" content="faturas, recibos, orçamentos, PDF, gestão, negócios">
     <meta name="author" content="Biz-flow">
     <meta name="robots" content="index, follow">
-    
-    <!-- PWA & MOBILE ICONS -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/android-launchericon-192-192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/android-launchericon-512-512.png" />
-    <link rel="apple-touch-icon" href="/android-launchericon-192-192.png" />
-    <link rel="manifest" href="/manifest.json" />
-
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Biz-flow">
-    <meta name="format-detection" content="telephone=no">
 
     <title>Biz-flow.cloud | Gestão de Negócios</title>
 
@@ -27,46 +15,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
 
-    <!-- CSS inline crítico (evita bloqueio de renderização) -->
     <style>
       *{margin:0;padding:0;box-sizing:border-box}
       body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f1f5f9;color:#0f172a;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-      #app-splash{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f8fafc;z-index:9999;transition:opacity .5s}
-      .splash-logo{width:80px;height:80px;margin-bottom:24px;animation:pulse 2s ease-in-out infinite}
-      .splash-loader{width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#2563EB;border-radius:50%;animation:spin .8s linear infinite}
-      @keyframes spin{to{transform:rotate(360deg)}}
-      @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
       .dark body{background:#020617;color:#f1f5f9}
-      .dark #app-splash{background:#0f172a}
     </style>
-    
-    <!-- Tailwind + Font Awesome injectados via Vite (src/app/main.tsx) -->
+
+    <!-- Tailwind + Font Awesome injectados via Vite -->
   </head>
   <body>
-    <div id="root">
-      <!-- SPLASH SCREEN -->
-      <div id="app-splash">
-         <svg class="splash-logo" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <defs>
-              <linearGradient id="splash_grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="#38bdf8" />
-                <stop offset="100%" stop-color="#2563EB" />
-              </linearGradient>
-            </defs>
-            <rect x="0" y="0" width="512" height="512" rx="120" fill="url(#splash_grad)" />
-            <path d="M110 160 H 402" stroke="white" stroke-width="45" stroke-linecap="round" />
-            <path d="M110 266 H 402" stroke="white" stroke-width="45" stroke-linecap="round" opacity="0.85" />
-            <path d="M110 372 H 260" stroke="white" stroke-width="45" stroke-linecap="round" opacity="0.7" />
-            <circle cx="382" cy="382" r="90" fill="white" />
-            <g transform="translate(382, 382) scale(0.9)">
-                <path d="M-25 25 L35 -35" stroke="#2563EB" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M-15 -35 H35 V15" stroke="#2563EB" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" />
-            </g>
-         </svg>
-         <div class="splash-loader"></div>
-         <p style="margin-top: 20px; font-size: 14px; font-weight: 600; color: #64748B; letter-spacing: 0.05em;">Biz-Flow</p>
-      </div>
-    </div>
+    <div id="root"></div>
     <script type="module" src="/src/app/main.tsx"></script>
   </body>
 </html>
