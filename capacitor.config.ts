@@ -4,9 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.bizflow.cloud',
   appName: 'Biz-flow.cloud',
   webDir: 'dist',
-  server: {
-    androidScheme: 'https',
-  },
   android: {
     backgroundColor: '#ffffff',
   },

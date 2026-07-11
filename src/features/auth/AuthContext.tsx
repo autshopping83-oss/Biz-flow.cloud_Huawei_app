@@ -1,19 +1,14 @@
 // src/features/auth/AuthContext.tsx
 // AuthContext para Android - guest-first, conexão opcional com Supabase
+// Suporta modo offline (sem credenciais Supabase)
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { User } from '@supabase/supabase-js';
-import { supabase } from '../../services/supabase';
+import type { User } from '@supabase/supabase-js';
+import { supabase, isSupabaseAvailable } from '../../services/supabase';
 
 interface AuthState {
   user: User | null;
   loading: boolean;
-}
-
-interface StoredAuth {
-  userId: string;
-  email: string;
-  connectedAt: number;
 }
 
 interface AuthContextValue extends AuthState {
@@ -33,60 +28,35 @@ export const useAuth = () => {
   return ctx;
 };
 
-const AUTH_STORAGE_KEY = 'bizflow_auth_state';
-
-const getStoredAuth = (): StoredAuth | null => {
-  try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-
-const setStoredAuth = (auth: StoredAuth | null) => {
-  if (auth) {
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
-  } else {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-  }
-};
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<AuthState>({ user: null, loading: true });
   const loadingRef = useRef(true);
 
-  // Check stored auth on mount - tries Supabase session, falls back to stored credentials
+  // On mount: check Supabase session if available, otherwise go straight to guest
   useEffect(() => {
     let cancelled = false;
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+    if (!isSupabaseAvailable()) {
+      // No Supabase credentials - skip auth, go directly to guest mode
+      loadingRef.current = false;
+      setState({ user: null, loading: false });
+      return;
+    }
+
+    const { data: listener } = supabase!.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
       if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return;
       loadingRef.current = false;
       setState({ user: session?.user ?? null, loading: false });
     });
 
-    // Try to restore session from Supabase
-    supabase.auth.getSession()
+    supabase!.auth.getSession()
       .then(({ data: { session } }) => {
         if (cancelled) return;
         if (session?.user) {
           loadingRef.current = false;
           setState({ user: session.user, loading: false });
-          // Store auth reference
-          setStoredAuth({
-            userId: session.user.id,
-            email: session.user.email ?? '',
-            connectedAt: Date.now(),
-          });
-        } else {
-          // No Supabase session - check stored auth fallback
-          const stored = getStoredAuth();
-          if (stored) {
-            // We have stored credentials but no session - show as connected
-            // The user will need to login again for sync operations
-          }
+        } else if (loadingRef.current) {
           loadingRef.current = false;
           setState({ user: null, loading: false });
         }
@@ -105,32 +75,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!isSupabaseAvailable()) return { error: 'Sem conexão com o servidor. Verifique as credenciais Supabase.' };
+    const { error } = await supabase!.auth.signInWithPassword({ email, password });
     if (error) return { error: extractErrorMessage(error) };
-    // Auth state will be updated by the onAuthStateChange listener
     return { error: null };
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+    if (!isSupabaseAvailable()) return { error: 'Sem conexão com o servidor.' };
+    const { error } = await supabase!.auth.signUp({ email, password });
     return { error: error ? extractErrorMessage(error) : null };
   };
 
   const signOut = async () => {
-    setStoredAuth(null);
-    await supabase.auth.signOut();
+    if (isSupabaseAvailable()) {
+      await supabase!.auth.signOut();
+    }
     setState({ user: null, loading: false });
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    if (!isSupabaseAvailable()) return { error: 'Sem conexão com o servidor.' };
+    const { error } = await supabase!.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}?view=updatePassword`,
     });
     return { error: error ? extractErrorMessage(error) : null };
   };
 
   const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
+    if (!isSupabaseAvailable()) return;
+    await supabase!.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin },
     });

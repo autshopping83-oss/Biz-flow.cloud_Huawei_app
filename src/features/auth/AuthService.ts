@@ -1,58 +1,51 @@
 // src/features/auth/AuthService.ts
 // Serviço de autenticação para Android - guest-first, Supabase opcional
 
-import { supabase } from '../../services/supabase';
-
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
-  email: string;
-  userId: string;
-}
+import { supabase, isSupabaseAvailable } from '../../services/supabase';
 
 export const AuthService = {
   async signIn(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!isSupabaseAvailable()) return { error: 'Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.' };
+    const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
     if (error) return { error: mapAuthError(error) };
     if (!data.user) return { error: 'Erro ao autenticar. Tente novamente.' };
 
     return {
       error: null,
-      user: {
-        id: data.user.id,
-        email: data.user.email ?? email,
-      },
+      user: { id: data.user.id, email: data.user.email ?? email },
     };
   },
 
   async signUp(email: string, password: string) {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (!isSupabaseAvailable()) return { error: 'Supabase não configurado.' };
+    const { data, error } = await supabase!.auth.signUp({ email, password });
     if (error) return { error: mapAuthError(error) };
     if (!data.user) return { error: 'Erro ao criar conta. Tente novamente.' };
 
     return {
       error: null,
-      user: {
-        id: data.user.id,
-        email: data.user.email ?? email,
-      },
+      user: { id: data.user.id, email: data.user.email ?? email },
     };
   },
 
   async signOut() {
-    const { error } = await supabase.auth.signOut();
-    if (error) console.warn('SignOut error:', error.message);
+    if (isSupabaseAvailable()) {
+      const { error } = await supabase!.auth.signOut();
+      if (error) console.warn('SignOut error:', error.message);
+    }
   },
 
   async resetPassword(email: string) {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    if (!isSupabaseAvailable()) return { error: 'Supabase não configurado.' };
+    const { error } = await supabase!.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}?view=updatePassword`,
     });
     return { error: error ? mapAuthError(error) : null };
   },
 
   async signInWithGoogle() {
-    const { error } = await supabase.auth.signInWithOAuth({
+    if (!isSupabaseAvailable()) return { error: 'Supabase não configurado.' };
+    const { error } = await supabase!.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin },
     });
