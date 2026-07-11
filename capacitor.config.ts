@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'biz.flow.cloud',
+  appId: 'com.bizflow.cloud',
   appName: 'Biz-flow.cloud',
   webDir: 'dist',
   server: {

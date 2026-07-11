@@ -1,14 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "biz.flow.cloud"
+    namespace "com.bizflow.cloud"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "biz.flow.cloud"
+        applicationId "com.bizflow.cloud"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 4
+        versionName "1.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
