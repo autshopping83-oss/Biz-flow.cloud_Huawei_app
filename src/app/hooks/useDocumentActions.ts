@@ -168,16 +168,92 @@ export const useDocumentActions = ({
 
   const handlePrintThermal = useCallback(async () => {
     if (isPrinting) return;
-    const targetRef = thermalReceiptRef.current;
-    if (!targetRef) {
-      notify('Erro: Recibo térmico não encontrado.', 'error');
-      return;
-    }
-
     setIsPrinting(true);
-    notify('Impressão térmica requer Bluetooth. Use um navegador compatível.', 'info');
-    setIsPrinting(false);
-  }, [isPrinting, notify, thermalReceiptRef]);
+
+    try {
+      const fM = (val: number) => `${val.toLocaleString()} ${formData.currency || 'MT'}`;
+      const doc = formData;
+      const tipo = { INVOICE: 'FATURA', RECEIPT: 'RECIBO', INVOICE_RECEIPT: 'FACTURA-RECIBO', QUOTE: 'ORÇAMENTO' }[doc.type] || doc.type;
+
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        notify('Bloqueador de pop-ups ativo. Permita pop-ups para imprimir.', 'error');
+        setIsPrinting(false);
+        return;
+      }
+
+      const itemsHtml = doc.items.map(item => `
+        <tr>
+          <td style="padding:2px 0;font-size:10px">${item.description}</td>
+          <td style="padding:2px 0;font-size:10px;text-align:right">${item.quantity}x</td>
+          <td style="padding:2px 0;font-size:10px;text-align:right">${fM(item.unitPrice)}</td>
+          <td style="padding:2px 0;font-size:10px;text-align:right;font-weight:bold">${fM(item.total)}</td>
+        </tr>
+      `).join('');
+
+      printWindow.document.write(`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Imprimir Talão</title>
+<style>
+  @page { width: 80mm; margin: 0; padding: 0; }
+  body { width: 72mm; margin: 0 auto; padding: 5mm 0; font-family: 'Courier New', monospace; font-size: 11px; color: #000; }
+  .center { text-align: center; }
+  .bold { font-weight: bold; }
+  .h1 { font-size: 14px; font-weight: bold; margin: 2px 0; }
+  .h2 { font-size: 12px; margin: 2px 0; }
+  hr { border: none; border-top: 1px dashed #000; margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 1px 0; }
+  .total { font-size: 16px; font-weight: bold; margin: 8px 0; }
+  .footer { margin-top: 10px; font-size: 10px; }
+  @media print { body { width: 58mm; } }
+</style></head><body>
+  <div class="center">
+    ${doc.companyName ? `<div class="h1">${doc.companyName}</div>` : ''}
+    ${doc.companyNuit ? `<div class="h2">NUIT: ${doc.companyNuit}</div>` : ''}
+    ${doc.companyAddress ? `<div style="font-size:10px">${doc.companyAddress}</div>` : ''}
+  </div>
+  <hr>
+  <div class="center">
+    <div class="h1">${tipo}</div>
+    <div class="h2">Nº ${doc.number}</div>
+    <div class="h2">${doc.date}</div>
+  </div>
+  <hr>
+  ${doc.clientName ? `<div><b>Cliente:</b> ${doc.clientName}</div>` : ''}
+  ${doc.clientNuit ? `<div><b>NUIT:</b> ${doc.clientNuit}</div>` : ''}
+  <hr>
+  <table>
+    <tr style="font-weight:bold;font-size:10px">
+      <td>Descrição</td><td style="text-align:right">Qtd</td><td style="text-align:right">Preço</td><td style="text-align:right">Total</td>
+    </tr>
+    ${itemsHtml}
+  </table>
+  <hr>
+  <div style="text-align:right">
+    <div><b>Subtotal:</b> ${fM(doc.subtotal)}</div>
+    ${doc.taxRate > 0 ? `<div><b>IVA (${doc.taxRate}%):</b> ${fM(doc.taxAmount)}</div>` : ''}
+    ${doc.discount > 0 ? `<div><b>Desconto:</b> -${fM(doc.discount)}</div>` : ''}
+    <div class="total">Total: ${fM(doc.total)}</div>
+  </div>
+  ${doc.stampText ? `<hr><div class="center bold" style="font-size:14px">${doc.stampText}</div>` : ''}
+  <hr>
+  <div class="center footer">
+    <p>Obrigado pela preferência!</p>
+    <p>Gerado por Biz-flow</p>
+  </div>
+</body></html>`);
+
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { printWindow.print(); }, 500);
+      notify('Talão enviado para impressão.', 'success');
+    } catch (erro) {
+      console.error('Erro impressão:', erro);
+      notify('Erro ao imprimir talão.', 'error');
+    } finally {
+      setIsPrinting(false);
+    }
+  }, [isPrinting, formData, notify]);
 
   return {
     isGeneratingPdf,
