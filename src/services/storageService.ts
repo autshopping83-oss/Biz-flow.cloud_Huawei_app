@@ -24,25 +24,16 @@ const migrateCommentsToDexie = async () => {
 };
 migrateCommentsToDexie();
 
-// --- GESTÃO DE DIRETÓRIOS LOCAIS (File System Access API) ---
+// --- GESTÃO DE DIRETÓRIOS LOCAIS (apenas web) ---
+// As funções abaixo usam File System Access API que não existe em Android.
+// No Capacitor, usar @capacitor/filesystem.
 
-export const saveDirectoryHandle = async (handle: FileSystemDirectoryHandle) => {
-  try {
-    await db.transaction('rw', db.settings, () => {
-      db.settings.put({ id: 'default_dir', handle } as CompanySettings & { id: string; handle: FileSystemDirectoryHandle });
-    });
-  } catch (e) {
-    console.error("Erro ao guardar handle da pasta", e);
-  }
+export const saveDirectoryHandle = async (_handle: unknown) => {
+  // No-op: funcionalidade apenas web
 };
 
-export const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle | null> => {
-  try {
-    const item = await db.settings.get('default_dir');
-    return item ? (item as unknown as { handle?: FileSystemDirectoryHandle }).handle ?? null : null;
-  } catch (e) {
-    return null;
-  }
+export const getDirectoryHandle = async (): Promise<null> => {
+  return null;
 };
 
 // --- CLIENTES SALVOS ---

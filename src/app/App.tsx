@@ -72,7 +72,7 @@ const App: React.FC = () => {
   useAppLifecycle({
     userId, currentView, setCurrentView: (v: string) => setCurrentView(v as AppView),
     setHistory, setSavedClients, setSavedProducts, setCompanySettings,
-    setIsOnline, setLocalDirHandle: () => {},
+    setIsOnline,
   });
 
   const editor = useDocumentEditor({

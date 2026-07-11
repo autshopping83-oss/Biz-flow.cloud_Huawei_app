@@ -37,7 +37,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               A aplicação encontrou um erro inesperado. Por favor, tente recarregar a página.
             </p>
             <button
-              onClick={() => window.location.href = '/'}
+              onClick={() => window.location.reload()}
               className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition shadow-lg shadow-red-600/20"
             >
               Recarregar Página

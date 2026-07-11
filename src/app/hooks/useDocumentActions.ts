@@ -13,6 +13,9 @@ interface UseDocumentActionsParams {
   handleSave: (silent?: boolean) => Promise<void>;
 }
 
+// Detecta ambiente Capacitor nativo
+const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.();
+
 export const useDocumentActions = ({
   formData,
   receiptRef,
@@ -24,6 +27,24 @@ export const useDocumentActions = ({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+
+  // Helper: salvar Blob via Capacitor Filesystem
+  const saveBlobNative = async (blob: Blob, fileName: string, directory: 'Documents' | 'Cache' = 'Documents'): Promise<string | null> => {
+    try {
+      const { Filesystem, Directory } = await import('@capacitor/filesystem');
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1] ?? '');
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const dir = directory === 'Documents' ? Directory.Documents : Directory.Cache;
+      const path = `${directory === 'Documents' ? 'Documents' : 'temp'}/${fileName}`;
+      await Filesystem.writeFile({ path, data: base64, directory: dir });
+      const uri = await Filesystem.getUri({ path, directory: dir });
+      return uri.uri;
+    } catch { return null; }
+  };
 
   const generatePDFBlob = useCallback(async (): Promise<{ blob: Blob; fileName: string } | null> => {
     const targetRef = ghostReceiptRef.current || receiptRef.current;
@@ -78,35 +99,24 @@ export const useDocumentActions = ({
     try {
       const pdfData = await generatePDFBlob();
       if (!pdfData) throw new Error('Falha ao gerar PDF.');
-
       const { blob, fileName } = pdfData;
 
-      // Tentar usar Capacitor FileSystem + Share
-      const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
-      if (isNative) {
-        try {
-          const { NativeFileService } = await import('../../services/nativeFileService');
-          const { NativeShareService } = await import('../../services/nativeShareService');
-          const uri = await NativeFileService.savePDF(blob, fileName);
-          await NativeShareService.shareFile(uri, fileName, 'Salvar ou Compartilhar PDF');
-          notify('Documento gerado com sucesso!', 'success');
-        } catch {
-          // Fallback: download direto
-          const link = document.createElement('a');
-          link.href = URL.createObjectURL(blob);
-          link.download = fileName;
-          link.click();
-          notify('Documento descarregado!', 'success');
+      if (isCapacitor) {
+        // Nativo: guarda no dispositivo
+        const uri = await saveBlobNative(blob, fileName);
+        if (uri) {
+          notify(`PDF guardado em: Documentos/${fileName}`, 'success');
+        } else {
+          notify('Erro ao guardar PDF.', 'error');
         }
       } else {
-        // Web fallback: download
+        // Web: download
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = fileName;
         link.click();
         notify('Documento descarregado!', 'success');
       }
-
       await handleSave(true);
     } catch {
       notify('Erro na geração do PDF. Tente novamente.', 'error');
@@ -124,39 +134,44 @@ export const useDocumentActions = ({
       const pdfData = await generatePDFBlob();
       if (!pdfData) throw new Error('Erro ao gerar ficheiro.');
 
-      const { blob, fileName } = pdfData;
-
       // Tentar share nativo via Capacitor
-      const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
-      if (isNative) {
+      if (isCapacitor) {
         try {
-          const { NativeFileService } = await import('../../services/nativeFileService');
-          const uri = await NativeFileService.savePDFToCache(blob, fileName);
-          const { NativeShareService } = await import('../../services/nativeShareService');
-          await NativeShareService.shareFile(uri, fileName, 'Compartilhar Documento');
-          notify('Partilha concluída!', 'success');
+          const uri = await saveBlobNative(pdfData.blob, pdfData.fileName, 'Cache');
+          if (uri) {
+            const { Share } = await import('@capacitor/share');
+            await Share.share({ title: pdfData.fileName, url: uri, dialogTitle: 'Compartilhar Documento' });
+            notify('Partilha concluída!', 'success');
+          } else {
+            throw new Error('Erro ao preparar ficheiro');
+          }
         } catch {
-          // Fallback: WhatsApp link
+          // Fallback: WhatsApp link via AppLauncher
           if (!validators.phone(formData.clientContact || '')) {
             notify('Número de telefone inválido.', 'error');
           } else {
             const cleanPhone = formData.clientContact!.replace(/\D/g, '');
-            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Olá, segue o documento ${formData.number}.`)}`, '_blank');
+            const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Olá, segue o documento ${formData.number}.`)}`;
+            try {
+              const { AppLauncher } = await import('@capacitor/app-launcher');
+              await AppLauncher.openUrl({ url: waUrl });
+            } catch {
+              window.open(waUrl, '_blank');
+            }
+            notify('WhatsApp aberto!', 'success');
           }
         }
       } else {
         // Web: navigator.share ou WhatsApp fallback
-        const file = new File([blob], fileName, { type: 'application/pdf' });
+        const file = new File([pdfData.blob], pdfData.fileName, { type: 'application/pdf' });
         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: fileName, text: `Envio de ${formData.number}` });
+          await navigator.share({ files: [file], title: pdfData.fileName, text: `Envio de ${formData.number}` });
           notify('Partilha concluída!', 'success');
+        } else if (formData.clientContact && validators.phone(formData.clientContact)) {
+          const cleanPhone = formData.clientContact.replace(/\D/g, '');
+          window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Olá, segue o documento ${formData.number}.`)}`, '_blank');
         } else {
-          if (!formData.clientContact || !validators.phone(formData.clientContact)) {
-            notify('Número de telefone inválido. Verifique o contato do cliente.', 'error');
-          } else {
-            const cleanPhone = formData.clientContact.replace(/\D/g, '');
-            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Olá, segue o documento ${formData.number}.`)}`, '_blank');
-          }
+          notify('Número de telefone inválido.', 'error');
         }
       }
     } catch {
@@ -166,32 +181,19 @@ export const useDocumentActions = ({
     }
   }, [formData, generatePDFBlob, isSharing, notify]);
 
-  const handlePrintThermal = useCallback(async () => {
-    if (isPrinting) return;
-    setIsPrinting(true);
+  const buildThermalHtml = (doc: ReceiptData): string => {
+    const fM = (val: number) => `${val.toLocaleString()} ${doc.currency || 'MT'}`;
+    const tipo = { INVOICE: 'FATURA', RECEIPT: 'RECIBO', INVOICE_RECEIPT: 'FACTURA-RECIBO', QUOTE: 'ORÇAMENTO' }[doc.type] || doc.type;
 
-    try {
-      const fM = (val: number) => `${val.toLocaleString()} ${formData.currency || 'MT'}`;
-      const doc = formData;
-      const tipo = { INVOICE: 'FATURA', RECEIPT: 'RECIBO', INVOICE_RECEIPT: 'FACTURA-RECIBO', QUOTE: 'ORÇAMENTO' }[doc.type] || doc.type;
-
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        notify('Bloqueador de pop-ups ativo. Permita pop-ups para imprimir.', 'error');
-        setIsPrinting(false);
-        return;
-      }
-
-      const itemsHtml = doc.items.map(item => `
+    const itemsHtml = doc.items.map(item => `
         <tr>
           <td style="padding:2px 0;font-size:10px">${item.description}</td>
           <td style="padding:2px 0;font-size:10px;text-align:right">${item.quantity}x</td>
           <td style="padding:2px 0;font-size:10px;text-align:right">${fM(item.unitPrice)}</td>
           <td style="padding:2px 0;font-size:10px;text-align:right;font-weight:bold">${fM(item.total)}</td>
-        </tr>
-      `).join('');
+        </tr>`).join('');
 
-      printWindow.document.write(`<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Imprimir Talão</title>
 <style>
   @page { width: 80mm; margin: 0; padding: 0; }
@@ -241,12 +243,67 @@ export const useDocumentActions = ({
     <p>Obrigado pela preferência!</p>
     <p>Gerado por Biz-flow</p>
   </div>
-</body></html>`);
+</body></html>`;
+  };
 
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => { printWindow.print(); }, 500);
-      notify('Talão enviado para impressão.', 'success');
+  const handlePrintThermal = useCallback(async () => {
+    if (isPrinting) return;
+    setIsPrinting(true);
+
+    try {
+      if (isCapacitor) {
+        // Android: tentar BLE nativo
+        try {
+          const { BLEPrinterService } = await import('../../features/bluetooth/BLEPrinterService');
+          const { ThermalPrinter } = await import('../../features/bluetooth/thermalPrinterProtocol');
+
+          if (BLEPrinterService.isConnected()) {
+            const printer = new ThermalPrinter();
+            const data = printer.buildDocument({
+              companyName: formData.companyName || 'Biz-flow',
+              companyNuit: formData.companyNuit,
+              documentType: { INVOICE: 'FATURA', RECEIPT: 'RECIBO', INVOICE_RECEIPT: 'FACTURA-RECIBO', QUOTE: 'ORÇAMENTO' }[formData.type] || formData.type,
+              documentNumber: formData.number,
+              date: formData.date,
+              clientName: formData.clientName,
+              clientNuit: formData.clientNuit,
+              items: formData.items.map(i => ({
+                description: i.description,
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                total: i.total,
+              })),
+              subtotal: formData.subtotal,
+              taxRate: formData.taxRate,
+              taxAmount: formData.taxAmount,
+              discount: formData.discount,
+              total: formData.total,
+              currency: formData.currency,
+              stampText: formData.stampText,
+            }).getData();
+
+            await BLEPrinterService.print(data);
+            notify('Documento enviado para impressão!', 'success');
+          } else {
+            notify('Nenhuma impressora Bluetooth conectada. Conecte uma em "Mais > Configurações".', 'info');
+          }
+        } catch {
+          notify('Erro na impressão Bluetooth. Verifique se a impressora está ligada.', 'error');
+        }
+      } else {
+        // Web: impressão via browser
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+          notify('Bloqueador de pop-ups ativo. Permita pop-ups para imprimir.', 'error');
+          setIsPrinting(false);
+          return;
+        }
+        printWindow.document.write(buildThermalHtml(formData));
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => { printWindow.print(); }, 500);
+        notify('Talão enviado para impressão.', 'success');
+      }
     } catch (erro) {
       console.error('Erro impressão:', erro);
       notify('Erro ao imprimir talão.', 'error');

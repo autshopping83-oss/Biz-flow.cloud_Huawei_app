@@ -3,6 +3,13 @@
 
 import { supabase, isSupabaseAvailable } from '../../services/supabase';
 
+const getRedirectUrl = () => {
+  if (typeof window !== 'undefined' && !!(window as any).Capacitor?.isNativePlatform?.()) {
+    return 'bizflow://auth/callback';
+  }
+  return window.location.origin;
+};
+
 export const AuthService = {
   async signIn(email: string, password: string) {
     if (!isSupabaseAvailable()) return { error: 'Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.' };
@@ -38,7 +45,7 @@ export const AuthService = {
   async resetPassword(email: string) {
     if (!isSupabaseAvailable()) return { error: 'Supabase não configurado.' };
     const { error } = await supabase!.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}?view=updatePassword`,
+      redirectTo: `${getRedirectUrl()}?view=updatePassword`,
     });
     return { error: error ? mapAuthError(error) : null };
   },
@@ -47,7 +54,7 @@ export const AuthService = {
     if (!isSupabaseAvailable()) return { error: 'Supabase não configurado.' };
     const { error } = await supabase!.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: getRedirectUrl() },
     });
     if (error) return { error: mapAuthError(error) };
     return { error: null };

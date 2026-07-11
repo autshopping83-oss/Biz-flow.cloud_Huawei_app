@@ -11,7 +11,7 @@ interface SettingsModalProps {
   onRequestFolderPermission: () => Promise<void>;
   onSaveSettings: () => Promise<void>;
   isSavingSettings: boolean;
-  localDirHandle: FileSystemDirectoryHandle | null;
+  localDirHandle: unknown;
   onSaveSignature: () => void;
   onClearSignature: () => void;
   settingsSignatureCanvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -120,7 +120,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </p>
           <button onClick={onRequestFolderPermission} className="bg-emerald-50 text-emerald-700 font-bold text-xs py-3 px-5 rounded-xl flex items-center gap-2 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400 dark:hover:bg-emerald-900/60 transition-colors">
             <i className="fa-solid fa-folder-tree"></i>
-            {localDirHandle ? `Pasta '${localDirHandle.name}' Ativa` : 'Ativar Armazenamento Local'}
+            {localDirHandle ? 'Pasta Local Ativa' : 'Ativar Armazenamento Local (Web)'}
           </button>
         </div>
 

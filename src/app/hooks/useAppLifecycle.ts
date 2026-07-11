@@ -11,7 +11,6 @@ interface UseAppLifecycleParams {
   setSavedProducts: (products: SavedProduct[]) => void;
   setCompanySettings: React.Dispatch<React.SetStateAction<CompanySettings>>;
   setIsOnline: (online: boolean) => void;
-  setLocalDirHandle: (handle: FileSystemDirectoryHandle | null) => void;
 }
 
 export const useAppLifecycle = ({
@@ -23,7 +22,6 @@ export const useAppLifecycle = ({
   setSavedProducts,
   setCompanySettings,
   setIsOnline,
-  setLocalDirHandle,
 }: UseAppLifecycleParams) => {
   const loadedForRef = useRef<string | null>(null);
   const onReadyCalledRef = useRef(false);

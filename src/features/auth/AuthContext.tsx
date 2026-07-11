@@ -6,6 +6,15 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import type { User } from '@supabase/supabase-js';
 import { supabase, isSupabaseAvailable } from '../../services/supabase';
 
+const getRedirectUrl = () => {
+  // No Capacitor, o window.location.origin retorna http://localhost
+  // Usamos a URL do Supabase diretamente para OAuth
+  if (typeof window !== 'undefined' && !!(window as any).Capacitor?.isNativePlatform?.()) {
+    return 'bizflow://auth/callback';
+  }
+  return window.location.origin;
+};
+
 interface AuthState {
   user: User | null;
   loading: boolean;
@@ -97,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const resetPassword = async (email: string) => {
     if (!isSupabaseAvailable()) return { error: 'Sem conexão com o servidor.' };
     const { error } = await supabase!.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}?view=updatePassword`,
+      redirectTo: `${getRedirectUrl()}?view=updatePassword`,
     });
     return { error: error ? extractErrorMessage(error) : null };
   };
@@ -106,7 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!isSupabaseAvailable()) return;
     await supabase!.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: getRedirectUrl() },
     });
   };
 

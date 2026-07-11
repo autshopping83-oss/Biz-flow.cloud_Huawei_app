@@ -1,7 +1,7 @@
 // src/features/bluetooth/BLEPrinterService.ts
 // Serviço de impressão BLE para impressoras térmicas
 
-import { BluetoothLe, type Device, type BleClient } from '@capacitor-community/bluetooth-le';
+import { BluetoothLe, type Device } from '@capacitor-community/bluetooth-le';
 
 export interface PrinterDevice {
   deviceId: string;
@@ -17,8 +17,8 @@ const SPP_SERVICE_UUID = '0000abf0-0000-1000-8000-00805f9b34fb';
 const SPP_CHARACTERISTIC_UUID = '0000abf1-0000-1000-8000-00805f9b34fb';
 
 export const BLEPrinterService = {
-  private devices: PrinterDevice[] = [],
-  private connectedDeviceId: string | null = null,
+  devices: [] as PrinterDevice[],
+  connectedDeviceId: null as string | null,
 
   /**
    * Escaneia dispositivos BLE próximos
