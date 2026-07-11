@@ -313,19 +313,6 @@ export const EditorFormView: React.FC<EditorFormViewProps> = ({
       </div>
     </Section>
 
-    {/* Send Document */}
-    <Section title="Enviar Documento" icon="fa-paper-plane">
-      <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Partilhe este documento diretamente para o cliente via WhatsApp ou Email.</p>
-      <div className="grid grid-cols-2 gap-3">
-        <button onClick={onSendWhatsApp} className="bg-[#25D366] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#20bd5a] transition-all active:scale-95 shadow-lg shadow-[#25D366]/20 flex items-center justify-center gap-2">
-          <i className="fa-brands fa-whatsapp text-lg"></i> WhatsApp
-        </button>
-        <button onClick={onSendEmail} className="bg-blue-500 text-white py-3 rounded-xl text-sm font-bold hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
-          <i className="fa-solid fa-envelope text-lg"></i> Email
-        </button>
-      </div>
-    </Section>
-
     {/* Save New Product Modal */}
     {showSaveProductModal && pendingItem && (
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-fadeIn">
