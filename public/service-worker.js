@@ -1,12 +1,15 @@
 
-const CACHE_NAME = 'bizflow-simple-v36';
-const DYNAMIC_CACHE = 'bizflow-dynamic-v36';
+const CACHE_NAME = 'bizflow-simple-v37';
+const DYNAMIC_CACHE = 'bizflow-dynamic-v37';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './index.css'
+  './index.css',
+  './logo.svg',
+  './android-launchericon-192-192.png',
+  './android-launchericon-512-512.png'
 ];
 
 self.addEventListener('install', (event) => {
