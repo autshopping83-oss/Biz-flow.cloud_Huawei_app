@@ -130,16 +130,58 @@ export const DocumentShareModal: React.FC<DocumentShareModalProps> = ({
     setSendResult({ success: true, message: `WhatsApp aberto para ${recipientName}!${pdfUrl ? ' PDF disponivel no link.' : ''}` });
   };
 
+  const gerarPdfFallback = async (): Promise<{ blob: Blob; fileName: string } | null> => {
+    try {
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const doc = formData;
+      const tipo = { INVOICE: 'FACTURA', RECEIPT: 'RECIBO', INVOICE_RECEIPT: 'FACTURA-RECIBO', QUOTE: 'ORÇAMENTO' }[doc.type] || doc.type;
+      let y = 20;
+      pdf.setFontSize(18);
+      pdf.text(doc.companyName || 'Biz-flow', 105, y, { align: 'center' }); y += 10;
+      pdf.setFontSize(14);
+      pdf.text(tipo + ' #' + doc.number, 105, y, { align: 'center' }); y += 8;
+      pdf.setFontSize(10);
+      pdf.text('Data: ' + doc.date, 20, y); y += 8;
+      if (doc.clientName) { pdf.text('Cliente: ' + doc.clientName, 20, y); y += 6; }
+      y += 4;
+      pdf.setFontSize(8);
+      doc.items.forEach(item => {
+        const line = `${item.description}  |  ${item.quantity}x  |  ${fMoney(item.unitPrice)}  |  ${fMoney(item.total)}`;
+        if (y > 275) { pdf.addPage(); y = 20; }
+        pdf.text(line, 20, y); y += 6;
+      });
+      y += 4; pdf.setFontSize(12);
+      pdf.text('Subtotal: ' + fMoney(doc.subtotal), 190, y, { align: 'right' }); y += 7;
+      if (doc.taxRate > 0) { pdf.text('IVA (' + doc.taxRate + '%): ' + fMoney(doc.taxAmount), 190, y, { align: 'right' }); y += 7; }
+      if (doc.discount > 0) { pdf.text('Desconto: -' + fMoney(doc.discount), 190, y, { align: 'right' }); y += 7; }
+      pdf.setFontSize(16);
+      pdf.setTextColor(37, 99, 235);
+      pdf.text('Total: ' + fMoney(doc.total), 190, y + 4, { align: 'right' });
+      const blob = pdf.output('blob');
+      const fileName = (doc.number || 'documento').replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
+      return { blob, fileName };
+    } catch { return null; }
+  };
+
   const handleSend = async (method: 'email' | 'whatsapp') => {
     const recipient = method === 'email' ? recipientEmail : recipientPhone;
     if (!recipient || !recipientName) return;
     setIsSending(true);
     setSendResult(null);
 
-    // Gerar PDF primeiro se possivel
+    // 1. GERAR PDF — tentar html2canvas, se falhar usar jsPDF direto
     let pdfData: { blob: Blob; fileName: string } | null = null;
     if (onGetPdfBlob) {
       pdfData = await onGetPdfBlob();
+    }
+    if (!pdfData) {
+      pdfData = await gerarPdfFallback();
+    }
+    if (!pdfData) {
+      setSendResult({ success: false, message: 'Erro ao gerar PDF. Tente novamente.' });
+      setIsSending(false);
+      return;
     }
 
     try {
@@ -149,7 +191,17 @@ export const DocumentShareModal: React.FC<DocumentShareModalProps> = ({
         await handleSendWhatsApp(recipient, pdfData);
       }
     } catch (err: unknown) {
-      setSendResult({ success: false, message: err instanceof Error ? err.message : 'Erro ao enviar.' });
+      // Fallback: download do PDF para envio manual
+      const url = URL.createObjectURL(pdfData.blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = pdfData.fileName;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setSendResult({
+        success: true,
+        message: `PDF descarregado (${pdfData.fileName}). Envie manualmente.`,
+      });
     } finally {
       setIsSending(false);
     }
