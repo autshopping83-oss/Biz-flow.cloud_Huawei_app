@@ -39,6 +39,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Decode keystore from secret
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/bizflow-android.keystore
+
       - name: Build AAB Release (assinado)
         run: |
           cd android
