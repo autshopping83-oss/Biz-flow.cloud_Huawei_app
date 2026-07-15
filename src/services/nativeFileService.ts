@@ -9,7 +9,7 @@ export const NativeFileService = {
    */
   async savePDF(blob: Blob, fileName: string): Promise<string> {
     const base64 = await blobToBase64(blob);
-    const path = `documents/${fileName}`;
+    const path = `Biz-flow/${fileName}`;
 
     // Tenta salvar em Documents primeiro, fallback para Cache
     try {

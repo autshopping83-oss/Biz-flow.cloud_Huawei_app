@@ -16,7 +16,6 @@ export const NativeShareService = {
         dialogTitle: dialogTitle || 'Compartilhar Documento',
       });
     } catch (error: any) {
-      // Utilizador cancelou ou erro - ignorar
       if (error?.message !== 'canceled') {
         console.warn('Share error:', error);
       }
@@ -33,23 +32,19 @@ export const NativeShareService = {
         text,
         dialogTitle: 'Compartilhar',
       });
-    } catch {
-      // Silencioso
-    }
+    } catch {}
   },
 
   /**
-   * Abre o WhatsApp com uma mensagem (fallback para wa.me)
+   * Abre o WhatsApp com uma mensagem para um número específico
    */
-  async shareWhatsApp(text: string): Promise<void> {
+  async shareWhatsApp(phone: string, text: string): Promise<void> {
+    const cleanPhone = phone.replace(/\D/g, '');
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
     try {
-      // Tenta usar AppLauncher para abrir WhatsApp
-      const encoded = encodeURIComponent(text);
-      await AppLauncher.openUrl({ url: `https://wa.me/?text=${encoded}` });
+      await AppLauncher.openUrl({ url });
     } catch {
-      // Fallback: abrir no browser
-      const encoded = encodeURIComponent(text);
-      window.open(`https://wa.me/?text=${encoded}`, '_blank');
+      window.open(url, '_blank');
     }
   },
 };

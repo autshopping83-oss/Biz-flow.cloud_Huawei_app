@@ -72,8 +72,8 @@ async function savePdfToDevice(blob: Blob, fileName: string): Promise<string | n
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
-    await Filesystem.writeFile({ path: `Documents/${fileName}`, data: base64, directory: Directory.Documents });
-    const uri = await Filesystem.getUri({ path: `Documents/${fileName}`, directory: Directory.Documents });
+    await Filesystem.writeFile({ path: `Biz-flow/${fileName}`, data: base64, directory: Directory.Documents });
+    const uri = await Filesystem.getUri({ path: `Biz-flow/${fileName}`, directory: Directory.Documents });
     return uri.uri;
   } catch { return null; }
 }
