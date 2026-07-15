@@ -166,14 +166,9 @@ export const BLEPrinterService = {
    * Verifica se está conectado
    */
   isConnected(): boolean {
-    if (!this.connectedDeviceId) return false;
-    try {
-      // Verificar estado real da conexão
-      const { BluetoothLe } = require('@capacitor-community/bluetooth-le');
-      return true; // O listener onDisconnect atualiza o estado
-    } catch {
-      return false;
-    }
+    // Verificação local da variável de estado
+    // O callback onDisconnect (linha 78-82) atualiza connectedDeviceId
+    return this.connectedDeviceId !== null;
   },
 
   /**

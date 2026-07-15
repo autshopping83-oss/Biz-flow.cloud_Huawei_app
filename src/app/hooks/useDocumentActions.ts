@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { validators } from '../../utils/validators';
 import { ReceiptData } from '../../types';
 
@@ -130,9 +129,6 @@ const APP_FOLDER = 'Biz-flow';
 
 export const useDocumentActions = ({
   formData,
-  receiptRef,
-  ghostReceiptRef,
-  thermalReceiptRef,
   notify,
   handleSave,
 }: UseDocumentActionsParams) => {
@@ -173,65 +169,15 @@ export const useDocumentActions = ({
     } catch { return null; }
   };
 
-  // Geração de PDF: jsPDF puro (primário) + html2canvas (fallback visual)
+  // Geração de PDF: jsPDF puro (confiável, 0% dependência de DOM/rede)
   const generatePDFBlob = useCallback(async (): Promise<{ blob: Blob; fileName: string } | null> => {
-    // No Capacitor, usar jsPDF diretamente (mais confiável)
-    if (isCapacitor) {
-      try {
-        return generatePdfJsPDF(formData, fMoney);
-      } catch (e) {
-        console.error('jsPDF generation error:', e);
-        return null;
-      }
+    try {
+      return generatePdfJsPDF(formData, fMoney);
+    } catch (e) {
+      console.error('jsPDF generation error:', e);
+      return null;
     }
-
-    // Web: tentar html2canvas para visual bonito
-    const targetRef = ghostReceiptRef.current || receiptRef.current;
-    if (targetRef) {
-      try {
-        const canvas = await html2canvas(targetRef, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          width: 794,
-          height: 1123,
-          windowWidth: 1280,
-          onclone: (clonedDoc: Document) => {
-            const el = clonedDoc.getElementById('receipt-capture-ghost');
-            if (el) {
-              el.style.transform = 'none';
-              el.style.boxShadow = 'none';
-              el.style.margin = '0';
-              el.style.padding = '25mm';
-              el.style.position = 'static';
-              el.style.width = '210mm';
-              el.style.minHeight = '297mm';
-            }
-          },
-        });
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.9);
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-
-        const sanitizedNumber = validators.fileName(formData.number);
-        const sanitizedClientName = validators.fileName(formData.clientName);
-        const fileName = sanitizedClientName
-          ? `${sanitizedNumber}_${sanitizedClientName}.pdf`
-          : `${sanitizedNumber}_documento.pdf`;
-
-        return { blob: pdf.output('blob'), fileName };
-      } catch {
-        // html2canvas falhou → fallback jsPDF
-      }
-    }
-
-    // Fallback: jsPDF puro
-    try { return generatePdfJsPDF(formData, fMoney); } catch { return null; }
-  }, [formData, ghostReceiptRef, receiptRef]);
+  }, [formData]);
 
   const handleGeneratePDF = useCallback(async () => {
     setIsGeneratingPdf(true);
