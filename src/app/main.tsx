@@ -38,6 +38,26 @@ const initCapacitor = async () => {
 
 initCapacitor();
 
+// --- GLOBAL UNHANDLED REJECTION HANDLER ---
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled rejection:', event.reason);
+  // Evita que erros assíncronos escapem silenciosamente
+});
+
+// --- SERVICE WORKER REGISTRATION (PWA) ---
+if ('serviceWorker' in navigator && !window.Capacitor?.isNativePlatform()) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('./service-worker.js')
+      .then((registration) => {
+        console.log('SW registered:', registration.scope);
+      })
+      .catch(() => {
+        // Silencioso - não crítico para o funcionamento
+      });
+  });
+}
+
 // --- INITIALIZATION ---
 const rootElement = document.getElementById('root');
 if (!rootElement) {

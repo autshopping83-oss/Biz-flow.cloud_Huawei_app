@@ -5,9 +5,10 @@
  * Gerencia: formData, newItem, mobileTab, modais, histórico.
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ReceiptData, CompanySettings, DocumentType, LineItem } from '../../../types';
 import { generateNextReceiptNumber, saveReceipt, deleteReceipt } from '../../../services/storageService';
+import { db } from '../../../services/db';
 import { useSignatureCanvas } from '../../../app/hooks/useSignatureCanvas';
 import { useDocumentActions } from '../../../app/hooks/useDocumentActions';
 
@@ -42,6 +43,38 @@ export function useDocumentEditor({
   const ghostReceiptRef = useRef<HTMLDivElement>(null);
   const thermalReceiptRef = useRef<HTMLDivElement>(null);
 
+  // --- AUTO-SAVE RASCUNHO (Dexie) ---
+  const autoSaveRef = useRef<ReturnType<typeof setTimeout>>();
+  const DRAFT_ID = 'editor_draft';
+
+  // Restaurar rascunho ao abrir o editor
+  useEffect(() => {
+    db.settings.get(DRAFT_ID).then((entry) => {
+      if (!entry) return;
+      const saved = entry as CompanySettings & { id: string; draftData?: string };
+      if (saved.draftData) {
+        try {
+          const parsed = JSON.parse(saved.draftData) as ReceiptData;
+          if (parsed.clientName || parsed.items.length > 0) {
+            setFormData(parsed);
+          }
+        } catch { /* ignora draft corrompido */ }
+      }
+    });
+  }, []);
+
+  // Auto-salvar com debounce de 3s sempre que formData mudar
+  useEffect(() => {
+    if (!formData.clientName && formData.items.length === 0) return;
+    if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
+    autoSaveRef.current = setTimeout(() => {
+      db.settings.put({ id: DRAFT_ID, draftData: JSON.stringify(formData) } as CompanySettings & { id: string });
+    }, 3000);
+    return () => {
+      if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
+    };
+  }, [formData]);
+
   const { canvasRef, clearCanvas, getCanvasDataUrl } = useSignatureCanvas(showSignatureModal);
 
   const { isGeneratingPdf, isSharing, isPrinting, handleGeneratePDF, handleShareWhatsApp, handlePrintThermal, generatePDFBlob } = useDocumentActions({
@@ -54,6 +87,7 @@ export function useDocumentEditor({
       if (!formData.clientName || formData.items.length === 0) return;
       const newHistory = await saveReceipt(formData, 'local');
       setHistory(newHistory);
+      await db.settings.delete(DRAFT_ID);
       if (!silent) notify('Dados guardados.', 'success');
     },
   });

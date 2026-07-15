@@ -29,7 +29,7 @@ export const syncToSupabase = async (userId: string): Promise<SyncResult> => {
         document_theme: d.documentTheme, status: d.status, pdf_url: d.pdfUrl,
         synced: true, created_at: new Date(d.createdAt).toISOString(),
       }));
-      const { error } = await supabase!.from('documents').upsert(mapped, { onConflict: 'id' });
+      const { error } = await supabase!.from('documents').upsert(mapped, { onConflict: 'id' }).abortSignal(AbortSignal.timeout(10000));
       if (error) result.errors.push(`documents: ${error.message}`);
       else result.documents = mapped.length;
     }
@@ -45,7 +45,7 @@ export const syncToSupabase = async (userId: string): Promise<SyncResult> => {
         user_id: userId, name: c.name, contact: c.contact,
         nuit: c.nuit, location: c.location,
       }));
-      const { error } = await supabase!.from('saved_clients').insert(mapped);
+      const { error } = await supabase!.from('saved_clients').insert(mapped).abortSignal(AbortSignal.timeout(10000));
       if (error) result.errors.push(`clients: ${error.message}`);
       else result.clients = mapped.length;
     }
@@ -60,7 +60,7 @@ export const syncToSupabase = async (userId: string): Promise<SyncResult> => {
       const mapped = products.map(p => ({
         user_id: userId, description: p.description, unit_price: p.unitPrice,
       }));
-      const { error } = await supabase!.from('saved_products').insert(mapped);
+      const { error } = await supabase!.from('saved_products').insert(mapped).abortSignal(AbortSignal.timeout(10000));
       if (error) result.errors.push(`products: ${error.message}`);
       else result.products = mapped.length;
     }
@@ -77,7 +77,7 @@ export const syncToSupabase = async (userId: string): Promise<SyncResult> => {
         description: t.description, category: t.category, date: t.date,
         receipt_id: t.receiptId,
       }));
-      const { error } = await supabase!.from('transactions').insert(mapped);
+      const { error } = await supabase!.from('transactions').insert(mapped).abortSignal(AbortSignal.timeout(10000));
       if (error) result.errors.push(`transactions: ${error.message}`);
       else result.transactions = mapped.length;
     }
@@ -108,7 +108,7 @@ export const syncSingleDocument = async (doc: {
       signature_data: doc.signatureData, document_theme: doc.documentTheme,
       status: doc.status, synced: true,
       created_at: new Date(doc.createdAt).toISOString(),
-    }, { onConflict: 'id' });
+    }, { onConflict: 'id' }).abortSignal(AbortSignal.timeout(10000));
   } catch {
     // Silencioso — sync nao deve bloquear o salvamento local
   }
