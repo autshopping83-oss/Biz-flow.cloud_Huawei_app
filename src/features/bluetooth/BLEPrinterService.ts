@@ -1,20 +1,13 @@
 // src/features/bluetooth/BLEPrinterService.ts
 // Serviço de impressão BLE para impressoras térmicas
+// Usa BleClient (positional args) do @capacitor-community/bluetooth-le
 
-import { BluetoothLe, type Device } from '@capacitor-community/bluetooth-le';
+import { BleClient, numbersToDataView } from '@capacitor-community/bluetooth-le';
 
 export interface PrinterDevice {
   deviceId: string;
   name: string;
 }
-
-// UUIDs comuns para impressoras térmicas BLE
-const PRINTER_SERVICE_UUID = '000018f0-0000-1000-8000-00805f9b34fb';
-const PRINTER_CHARACTERISTIC_UUID = '00002af1-0000-1000-8000-00805f9b34fb';
-
-// UUIDs alternativos (algumas impressoras usam SPP over BLE)
-const SPP_SERVICE_UUID = '0000abf0-0000-1000-8000-00805f9b34fb';
-const SPP_CHARACTERISTIC_UUID = '0000abf1-0000-1000-8000-00805f9b34fb';
 
 export const BLEPrinterService = {
   devices: [] as PrinterDevice[],
@@ -23,50 +16,36 @@ export const BLEPrinterService = {
   /**
    * Escaneia dispositivos BLE próximos
    */
-  async scanDevices(timeout = 5000): Promise<PrinterDevice[]> {
+  async scanDevices(timeout = 8000): Promise<PrinterDevice[]> {
     this.devices = [];
 
-    // Pedir permissão para escanear
     try {
-      await BluetoothLe.requestPermissions();
+      // Inicializa BLE (pede permissão Bluetooth internamente)
+      await BleClient.initialize();
     } catch {
-      throw new Error('Permissão Bluetooth não concedida.');
+      throw new Error('Permissão Bluetooth não concedida. Ative o Bluetooth nas configurações.');
     }
 
-    await BluetoothLe.initialize();
-
-    // Iniciar scan
-    await BluetoothLe.startScanning(
-      (device: Device) => {
-        if (device.name && device.deviceId) {
-          // Filtra apenas dispositivos com nome sugestivo de impressora
-          const name = device.name.toLowerCase();
-          if (
-            name.includes('printer') ||
-            name.includes('thermal') ||
-            name.includes('impress') ||
-            name.includes('58mm') ||
-            name.includes('80mm') ||
-            name.includes('pos') ||
-            name.includes('ble')
-          ) {
-            this.devices.push({
-              deviceId: device.deviceId,
-              name: device.name,
-            });
-          } else {
-            // Adiciona todos para debug
-            this.devices.push({
-              deviceId: device.deviceId,
-              name: device.name,
-            });
+    // Escanear dispositivos
+    await BleClient.requestLEScan(
+      { scanMode: 2 }, // SCAN_MODE_LOW_LATENCY
+      (result) => {
+        if (result.device?.name && result.device?.deviceId) {
+          const name = result.device.name;
+          const deviceId = result.device.deviceId;
+          // Evitar duplicatas
+          if (!this.devices.find(d => d.deviceId === deviceId)) {
+            this.devices.push({ deviceId, name });
           }
         }
-      },
-      { timeout }
+      }
     );
 
-    await BluetoothLe.stopScanning();
+    // Aguardar o tempo de scan
+    await new Promise(resolve => setTimeout(resolve, timeout));
+
+    // Parar scan
+    await BleClient.stopLEScan();
     return this.devices;
   },
 
@@ -75,9 +54,9 @@ export const BLEPrinterService = {
    */
   async connect(deviceId: string): Promise<void> {
     try {
-      await BluetoothLe.connect(deviceId, (deviceId) => {
-        console.log('BLE device disconnected:', deviceId);
-        if (this.connectedDeviceId === deviceId) {
+      await BleClient.connect(deviceId, (disconnectedId: string) => {
+        console.log('BLE device disconnected:', disconnectedId);
+        if (this.connectedDeviceId === disconnectedId) {
           this.connectedDeviceId = null;
         }
       });
@@ -93,7 +72,7 @@ export const BLEPrinterService = {
   async disconnect(): Promise<void> {
     if (this.connectedDeviceId) {
       try {
-        await BluetoothLe.disconnect(this.connectedDeviceId);
+        await BleClient.disconnect(this.connectedDeviceId);
       } catch {
         // Silencioso
       }
@@ -111,52 +90,32 @@ export const BLEPrinterService = {
 
     const deviceId = this.connectedDeviceId;
 
-    // Tentar serviço de impressora padrão
     try {
-      const services = await BluetoothLe.getServices(deviceId);
-      const printerService = services.find(
-        s => s.uuid.toLowerCase() === PRINTER_SERVICE_UUID ||
-             s.uuid.toLowerCase() === SPP_SERVICE_UUID
-      );
+      // Obter serviços do dispositivo
+      const services = await BleClient.getServices(deviceId);
 
-      if (printerService) {
-        const characteristics = await BluetoothLe.getCharacteristics(
-          deviceId,
-          printerService.uuid
-        );
-
-        const printChar = characteristics.find(
-          c => c.uuid.toLowerCase() === PRINTER_CHARACTERISTIC_UUID ||
-               c.uuid.toLowerCase() === SPP_CHARACTERISTIC_UUID ||
-               c.properties?.write
-        );
-
-        if (printChar) {
-          // Dividir em pacotes de 512 bytes (limite BLE)
-          const MTU = 512;
-          for (let i = 0; i < data.length; i += MTU) {
-            const chunk = data.slice(i, i + MTU);
-            await BluetoothLe.write(deviceId, printerService.uuid, printChar.uuid, Array.from(chunk));
-          }
-          return;
-        }
-      }
-
-      // Fallback: escrever no primeiro serviço/characteristic que suporta write
+      // Procurar um serviço e característica que suportem escrita
       for (const service of services) {
-        const characteristics = await BluetoothLe.getCharacteristics(deviceId, service.uuid);
-        const writeChar = characteristics.find(c => c.properties?.write || c.properties?.writeWithoutResponse);
-        if (writeChar) {
-          const MTU = 512;
-          for (let i = 0; i < data.length; i += MTU) {
-            const chunk = data.slice(i, i + MTU);
-            await BluetoothLe.write(deviceId, service.uuid, writeChar.uuid, Array.from(chunk));
+        for (const char of service.characteristics) {
+          if (char.properties?.write || char.properties?.writeWithoutResponse) {
+            // Encontrámos uma característica de escrita
+            // Dividir em pacotes (limite de MTU ~512 bytes)
+            const MTU = 480; // margem de segurança
+            for (let i = 0; i < data.length; i += MTU) {
+              const chunk = data.slice(i, i + MTU);
+              const dataView = numbersToDataView(Array.from(chunk));
+              if (char.properties.write) {
+                await BleClient.write(deviceId, service.uuid, char.uuid, dataView);
+              } else {
+                await BleClient.writeWithoutResponse(deviceId, service.uuid, char.uuid, dataView);
+              }
+            }
+            return; // Sucesso
           }
-          return;
         }
       }
 
-      throw new Error('Nenhuma característica de escrita encontrada.');
+      throw new Error('Nenhuma característica de escrita encontrada na impressora.');
     } catch (error) {
       throw new Error(`Erro de impressão: ${(error as Error).message}`);
     }
@@ -166,8 +125,6 @@ export const BLEPrinterService = {
    * Verifica se está conectado
    */
   isConnected(): boolean {
-    // Verificação local da variável de estado
-    // O callback onDisconnect (linha 78-82) atualiza connectedDeviceId
     return this.connectedDeviceId !== null;
   },
 
