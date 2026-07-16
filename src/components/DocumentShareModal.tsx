@@ -201,31 +201,51 @@ export const DocumentShareModal: React.FC<DocumentShareModalProps> = ({
     }
   };
 
-  // Email (abre share sheet com PDF anexado → utilizador escolhe email)
+  // Email (guarda PDF + tenta Share sheet; fallback mailto: com destinatário)
   const handleSendEmail = async (destinatario: string) => {
     if (isNative) {
-      // Gerar PDF primeiro
       const pdfData = await getPdf();
       if (!pdfData) {
         setSendResult({ success: false, message: 'Erro ao gerar PDF.' });
         return;
       }
       try {
-        // Guardar em cache para partilhar
+        // 1. Guardar PDF no dispositivo (persistente)
+        const deviceUri = await savePdfToDevice(pdfData.blob, pdfData.fileName);
+        // 2. Guardar em cache para partilha
         const cacheUri = await savePdfToCache(pdfData.blob, pdfData.fileName);
-        if (!cacheUri) throw new Error('Erro ao preparar PDF.');
-        // Abrir Share sheet nativo com o PDF → utilizador escolhe Email
-        const { Share } = await import('@capacitor/share');
-        await Share.share({
-          title: `Documento ${formData.number}`,
-          text: `Olá ${recipientName},\n\nSegue o documento ${formData.number}.\n\nCumprimentos,\n${companySettings.name}`,
-          url: cacheUri,
-          dialogTitle: 'Enviar documento por',
-        });
-        setSendResult({ success: true, message: `Documento partilhado com ${recipientName}!` });
+        // 3. Tentar Share sheet com PDF anexado
+        if (cacheUri) {
+          const { Share } = await import('@capacitor/share');
+          await Share.share({
+            title: `Documento ${formData.number}`,
+            text: `Olá ${recipientName},\n\nSegue o documento ${formData.number}.\n\nCumprimentos,\n${companySettings.name}`,
+            url: cacheUri,
+            dialogTitle: 'Enviar documento para',
+          });
+          setSendResult({ success: true, message: `Documento partilhado com ${recipientName}!` });
+        } else {
+          // Fallback: mailto: com destinatário preenchido
+          throw new Error('no cache');
+        }
       } catch (e: any) {
         const isCancel = e?.message === 'canceled' || e?.message?.includes('cancel');
-        setSendResult({ success: false, message: isCancel ? 'Partilha cancelada.' : 'Erro ao abrir email.' });
+        if (isCancel) {
+          setSendResult({ success: false, message: 'Partilha cancelada.' });
+        } else {
+          // Fallback: abrir email nativo com destinatário preenchido
+          try {
+            const { AppLauncher } = await import('@capacitor/app-launcher');
+            const subject = `Documento ${formData.number}`;
+            const body = `Olá ${recipientName},\n\nSegue o documento ${formData.number}.\n\nCumprimentos,\n${companySettings.name}`;
+            const mailtoUrl = `mailto:${destinatario}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            await AppLauncher.openUrl({ url: mailtoUrl });
+            const savedMsg = deviceUri ? ` PDF guardado em Biz-flow/ para anexar.` : '';
+            setSendResult({ success: true, message: `Email aberto para ${recipientName}!${savedMsg}` });
+          } catch {
+            setSendResult({ success: false, message: 'Erro ao abrir o email.' });
+          }
+        }
       }
     } else {
       // Web: mailto:
