@@ -58,7 +58,4 @@
 
     <!-- Vibrar (para feedback tátil) -->
     <uses-permission android:name="android.permission.VIBRATE" />
-
-    <!-- Google Ad ID -->
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 </manifest>
