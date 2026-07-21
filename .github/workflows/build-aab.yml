@@ -43,9 +43,11 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/bizflow-android.keystore
 
-      - name: Decode agconnect-services.json from secret
+      - name: Write agconnect-services.json from secret
+        env:
+          AGCONNECT_JSON: ${{ secrets.AGCONNECT_SERVICES_JSON }}
         run: |
-          echo "${{ secrets.AGCONNECT_SERVICES_JSON }}" | base64 -d > android/app/agconnect-services.json
+          echo "$AGCONNECT_JSON" > android/app/agconnect-services.json
 
       - name: Build AAB Release (assinado + HMS)
         run: |
