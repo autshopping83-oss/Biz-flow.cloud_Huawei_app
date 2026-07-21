@@ -5,7 +5,7 @@ android {
     namespace "com.bizflow.cloud"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.bizflow.cloud"
+        applicationId "biz_flow.cloud"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 6
