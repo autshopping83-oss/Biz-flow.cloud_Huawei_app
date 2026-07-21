@@ -20,9 +20,9 @@ android {
     signingConfigs {
         release {
             storeFile file('bizflow-android.keystore')
-            storePassword '012244'
-            keyAlias 'bizflow_alias'
-            keyPassword '012244'
+            storePassword project.findProperty('storePassword') ?: '012244'
+            keyAlias project.findProperty('keyAlias') ?: 'bizflow_alias'
+            keyPassword project.findProperty('keyPassword') ?: '012244'
         }
     }
     buildTypes {
