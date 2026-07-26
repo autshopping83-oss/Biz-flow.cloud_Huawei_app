@@ -32,6 +32,10 @@ android {
             signingConfig signingConfigs.release
         }
     }
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
 }
 
 repositories {

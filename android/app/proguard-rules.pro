@@ -19,3 +19,12 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# --- Huawei HMS Core ProGuard rules ---
+# Classes internas do HMS SDK (HiAnalytics, BouncyCastle, file system)
+# Estas classes são opcionais e não quebram o runtime. Ignorar warnings de missing class.
+-dontwarn com.huawei.**
+-keep class com.huawei.** { *; }
+
+-dontwarn org.bouncycastle.**
+-keep class org.bouncycastle.** { *; }
