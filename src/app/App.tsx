@@ -3,7 +3,7 @@
  * v5: Android Capacitor - BottomNav, offline-first, sem login gate
  */
 
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, lazy, Suspense, useEffect, useRef, useCallback } from 'react';
 import { ReceiptData, CompanySettings, SavedClient, SavedProduct } from '../types';
 import { Logo } from '../components/Logo';
 import { V } from '../_cachebuster/version';
@@ -67,6 +67,45 @@ const App: React.FC = () => {
 
   console.debug('BizFlow version:', V);
 
+  // --- Navigation history stack (for Android back button) ---
+  const navigationStack = useRef<AppView[]>([]);
+  const prevViewRef = useRef<AppView>('loading');
+
+  useEffect(() => {
+    const prev = prevViewRef.current;
+    if (prev !== currentView && prev !== 'loading') {
+      if (!(prev === 'home' && currentView === 'home')) {
+        navigationStack.current.push(prev);
+      }
+    }
+    prevViewRef.current = currentView;
+  }, [currentView]);
+
+  const goBack = useCallback(() => {
+    const stack = navigationStack.current;
+    if (stack.length > 0) {
+      const prev = stack.pop()!;
+      prevViewRef.current = prev;
+      setCurrentView(prev);
+      const tabMap: Record<string, NavTab> = { home: 'home', history: 'history', products: 'more', clients: 'more' };
+      const tab = tabMap[prev];
+      if (tab) setActiveTab(tab);
+    } else {
+      import('@capacitor/app').then(({ App }) => App.exitApp()).catch(() => {});
+    }
+  }, []);
+
+  // --- Back button listener (Android / HarmonyOS physical/virtual buttons) ---
+  useEffect(() => {
+    if (!window.Capacitor?.isNativePlatform()) return;
+    let removed = false;
+    import('@capacitor/app').then(({ App }) => {
+      if (removed) return;
+      App.addListener('backButton', () => goBack());
+    }).catch(() => {});
+    return () => { removed = true; };
+  }, [goBack]);
+
   const { notify } = useToast();
   const t = (key: string) => getTranslation(companySettings.language, key);
   const fMoney = (val: number) => formatMoney(val, companySettings.currency, companySettings.language);
@@ -86,6 +125,8 @@ const App: React.FC = () => {
   const settingsCanvasRef = settingsSignature.settingsSignatureCanvasRef;
 
   const handleTabChange = (tab: NavTab) => {
+    navigationStack.current = [];
+    prevViewRef.current = 'home';
     setActiveTab(tab);
     if (tab === 'home') {
       setCurrentView('home');
@@ -156,7 +197,12 @@ const App: React.FC = () => {
     localStorage.setItem('bizflow-theme', newTheme);
   };
 
-  const goHome = () => { setCurrentView('home'); setActiveTab('home'); };
+  const goHome = () => {
+    navigationStack.current = [];
+    prevViewRef.current = 'home';
+    setCurrentView('home');
+    setActiveTab('home');
+  };
 
   // Render content based on currentView
   const renderContent = () => {
