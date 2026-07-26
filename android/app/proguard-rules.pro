@@ -20,11 +20,20 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# --- Huawei HMS Core ProGuard rules ---
-# Classes internas do HMS SDK (HiAnalytics, BouncyCastle, file system)
-# Estas classes são opcionais e não quebram o runtime. Ignorar warnings de missing class.
--dontwarn com.huawei.**
--keep class com.huawei.** { *; }
+# --- Huawei HMS Core ProGuard/R8 rules ---
+# Classes internas de dispositivos Huawei (HiAnalytics, BouncyCastle, file system)
+# não existem no Android SDK comum — apenas em firmware Huawei. Suprimir warnings no R8.
 
+# Manter classes HMS que realmente usamos (Push Kit, AGConnect framework)
+-keep class com.huawei.hms.** { *; }
+-keep class com.huawei.agconnect.** { *; }
+
+# Suprimir warnings de classes ausentes em todos os sub-pacotes Huawei
+-dontwarn com.huawei.android.**
+-dontwarn com.huawei.hianalytics.**
+-dontwarn com.huawei.libcore.**
+-dontwarn com.huawei.**
 -dontwarn org.bouncycastle.**
--keep class org.bouncycastle.** { *; }
+
+# Se o R8 ainda abortar, descomentar a linha abaixo
+# -ignorewarnings
