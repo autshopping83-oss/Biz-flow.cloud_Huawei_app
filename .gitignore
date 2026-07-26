@@ -30,3 +30,6 @@ logs
 
 /src/generated/prisma
 bizflow-android.keystore
+
+# Huawei AppGallery Connect config (project-specific, developer must provide their own)
+android/app/agconnect-services.json
